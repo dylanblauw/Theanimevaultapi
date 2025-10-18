@@ -1,0 +1,626 @@
+import { useState } from 'react'
+import { useKV } from '@github/spark/hooks'
+import { Toaster, toast } from 'sonner'
+import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
+import { CartDrawer } from '@/components/CartDrawer'
+import { ProductDetailModal } from '@/components/ProductDetailModal'
+import { HomePage } from '@/components/pages/HomePage'
+import { ShopPage } from '@/components/pages/ShopPage'
+import { GamePage } from '@/components/pages/GamePage'
+import { CheckoutPage } from '@/components/pages/CheckoutPage'
+import { AccountPage } from '@/components/pages/AccountPage'
+import { products, categories } from '@/lib/products'
+import { Product, CartItem } from '@/lib/types'
+import { backgrounds, PageType } from '@/lib/backgrounds'
+
+function App() {
+  const [currentPage, setCurrentPage] = useState('home')
+  const [cartOpen, setCartOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [cartItems, setCartItems] = useKV<CartItem[]>('cart-items', [])
+
+  const handleAddToCart = (product: Product) => {
+    if (!product.inStock) {
+      toast.error('This item is currently out of stock')
+      return
+    }
+
+    setCartItems((currentItems: CartItem[] = []) => {
+      const existingItem = currentItems.find(item => item.product.id === product.id)
+      
+      if (existingItem) {
+        toast.success('Updated quantity in cart')
+        return currentItems.map(item =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      } else {
+        toast.success('Added to cart')
+        return [...currentItems, { product, quantity: 1 }]
+      }
+    })
+  }
+
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    setCartItems((currentItems: CartItem[] = []) =>
+      currentItems.map(item =>
+        item.product.id === productId
+          ? { ...item, quantity }
+          : item
+      )
+    )
+  }
+
+  const handleRemoveItem = (productId: string) => {
+    setCartItems((currentItems: CartItem[] = []) => currentItems.filter(item => item.product.id !== productId))
+    toast.success('Removed from cart')
+  }
+
+  const handleViewDetails = (product: Product) => {
+    setSelectedProduct(product)
+  }
+
+  const cartCount = (cartItems || []).reduce((sum, item) => sum + item.quantity, 0)
+  const featuredProducts = products.filter(p => p.featured)
+
+  // Get current background image
+  const currentBackground = backgrounds[currentPage as PageType] || backgrounds.home
+
+  return (
+    <div className="min-h-screen flex flex-col text-foreground relative">
+      {/* Dynamic background */}
+      <div 
+        className="page-background"
+        style={{
+          backgroundImage: `url(${currentBackground})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed'
+        }}
+      ></div>
+      
+      <Navbar
+        cartCount={cartCount}
+        onCartClick={() => setCartOpen(true)}
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+      />
+
+      <main className="flex-1 page-content">
+        {currentPage === 'home' && (
+          <HomePage
+            featuredProducts={featuredProducts}
+            onAddToCart={handleAddToCart}
+            onViewDetails={handleViewDetails}
+            onNavigate={setCurrentPage}
+          />
+        )}
+        
+        {currentPage === 'shop' && (
+          <ShopPage
+            products={products}
+            categories={categories}
+            onAddToCart={handleAddToCart}
+            onViewDetails={handleViewDetails}
+          />
+        )}
+        
+        {currentPage === 'game' && <GamePage />}
+        
+        {currentPage === 'checkout' && <CheckoutPage />}
+        
+        {currentPage === 'account' && <AccountPage />}
+      </main>
+
+      <Footer />
+
+      <CartDrawer
+        open={cartOpen}
+        onOpenChange={setCartOpen}
+        items={cartItems || []}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+      />
+
+      <ProductDetailModal
+        product={selectedProduct}
+        open={selectedProduct !== null}
+        onOpenChange={(open) => !open && setSelectedProduct(null)}
+        onAddToCart={handleAddToCart}
+      />
+
+      <Toaster position="top-right" richColors />
+    </div>
+  )
+}
+
+export default App
+import { Button } from '@/components/ui/button'
+import { ProductCard } from '@/components/ProductCard'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
+import { Product } from '@/lib/types'
+import { ArrowRight, GameController, Users, ShoppingBag, CheckCircle, Truck, Gem, Mail } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+
+interface HomePageProps {
+  featuredProducts: Product[]
+  onAddToCart: (product: Product) => void
+  onViewDetails: (product: Product) => void
+  onNavigate: (page: string) => void
+}
+
+export function HomePage({ featuredProducts, onAddToCart, onViewDetails, onNavigate }: HomePageProps) {
+  const [email, setEmail] = useState('')
+  const [currentSlide, setCurrentSlide] = useState(0)
+  
+  const whyChooseUsItems = [
+    {
+      icon: CheckCircle,
+      title: "Officially Licensed",
+      description: "100% authentic merchandise from your favorite anime series"
+    },
+    {
+      icon: Truck,
+      title: "Fast Worldwide Shipping",
+      description: "Quick and secure delivery to anime fans everywhere"
+    },
+    {
+      icon: Gem,
+      title: "Limited Edition Collectibles",
+      description: "Exclusive items you won't find anywhere else"
+    }
+  ]
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Handle newsletter subscription
+    console.log('Newsletter subscription:', email)
+    setEmail('')
+  }
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section with improved gradient overlay */}
+      <section className="relative overflow-hidden py-24 md:py-32 bg-gradient-to-b from-primary via-background to-background">
+        {/* Enhanced gradient overlay for better contrast */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,oklch(0.72_0.12_85),transparent_50%)] opacity-10" />
+        </div>
+        
+        <div className="container mx-auto px-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            {/* Logo with enhanced shine animation */}
+            <motion.div
+              animate={{ 
+                boxShadow: [
+                  '0 0 20px oklch(0.72 0.12 85 / 0.3)',
+                  '0 0 40px oklch(0.72 0.12 85 / 0.5)',
+                  '0 0 20px oklch(0.72 0.12 85 / 0.3)'
+                ]
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="inline-block mb-6"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1, delay: 0.3 }}
+                className="w-20 h-20 rounded-2xl bg-gold flex items-center justify-center font-bold text-gold-foreground text-4xl relative overflow-hidden"
+              >
+                <span className="relative z-10">AV</span>
+                {/* Shine effect */}
+                <motion.div
+                  initial={{ x: '-100%', opacity: 0 }}
+                  animate={{ x: '100%', opacity: 1 }}
+                  transition={{ duration: 2, delay: 1, repeat: Infinity, repeatDelay: 4 }}
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform skew-x-12"
+                />
+              </motion.div>
+            </motion.div>
+            
+            {/* Title with fade-in animation */}
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="text-5xl md:text-7xl font-bold mb-6 tracking-tight"
+            >
+              Welcome to <span className="text-gold bg-gradient-to-r from-gold to-yellow-400 bg-clip-text text-transparent">The Anime Vault</span>
+            </motion.h1>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed"
+            >
+              Your premier destination for authentic anime merchandise, exclusive collectibles, and the gateway to Otherworlds.
+            </motion.p>
+            
+            {/* Updated buttons with new labels and glow effects */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.9 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center"
+            >
+              <Button 
+                size="lg"
+                onClick={() => onNavigate('shop')}
+                className="bg-gold text-gold-foreground hover:bg-gold/90 text-base px-8 h-12 glow-gold group"
+              >
+                <ShoppingBag weight="bold" className="mr-2 group-hover:scale-110 transition-transform" />
+                Shop Now
+                <ArrowRight weight="bold" className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => onNavigate('game')}
+                className="border-gold/30 hover:border-gold hover:bg-gold/10 text-base px-8 h-12 group relative overflow-hidden"
+              >
+                {/* Glowing hover effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/20 to-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <GameController weight="bold" className="mr-2 relative z-10 group-hover:scale-110 transition-transform" />
+                <span className="relative z-10">Explore Otherworlds</span>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Enhanced Featured Collection with carousel-like grid */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Featured <span className="text-gold">Collection</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Handpicked treasures for every anime adventurer
+            </p>
+          </motion.div>
+
+          {/* Enhanced product grid with hover effects */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {featuredProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ 
+                  y: -8, 
+                  rotateY: 2,
+                  transition: { duration: 0.3 }
+                }}
+                className="group"
+              >
+                <div className="relative">
+                  <ProductCard
+                    product={product}
+                    onAddToCart={onAddToCart}
+                    onViewDetails={onViewDetails}
+                  />
+                  {/* Enhanced hover overlay with product info */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-lg flex items-end justify-center pb-4 pointer-events-none">
+                    <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <p className="text-foreground font-semibold text-lg">{product.name}</p>
+                      <p className="text-gold font-bold text-xl">${product.price}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => onNavigate('shop')}
+              className="border-gold/30 hover:border-gold hover:bg-gold/10 group"
+            >
+              View All Products
+              <ArrowRight weight="bold" className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us Section */}
+      <section className="py-16 md:py-24 bg-gradient-to-b from-background to-primary">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Why Choose <span className="text-gold">The Vault</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              We're committed to bringing you the best anime merchandise experience
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {whyChooseUsItems.map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.2 }}
+                whileHover={{ y: -5 }}
+              >
+                <Card className="p-8 text-center border-border hover:border-gold/50 transition-all duration-300 h-full group">
+                  <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-gold/20 transition-colors group-hover:scale-110 duration-300">
+                    <item.icon size={32} weight="bold" className="text-gold" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-4">{item.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-2xl mx-auto"
+          >
+            <Card className="p-8 md:p-12 text-center border-gold/30 bg-gradient-to-br from-card to-primary relative overflow-hidden">
+              {/* Background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 opacity-50" />
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-6">
+                  <Mail size={32} weight="bold" className="text-gold" />
+                </div>
+                
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Join the <span className="text-gold">Vault</span>
+                </h2>
+                
+                <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+                  Subscribe to unlock exclusive deals and early access to new drops
+                </p>
+                
+                <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-1 h-12 bg-background/50 border-border focus:border-gold"
+                    required
+                  />
+                  <Button 
+                    type="submit"
+                    className="h-12 px-8 bg-gold text-gold-foreground hover:bg-gold/90 glow-gold"
+                  >
+                    Subscribe
+                  </Button>
+                </form>
+                
+                <p className="text-xs text-muted-foreground mt-4">
+                  No spam, just the good stuff. Unsubscribe anytime.
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Game and Community Sections (keeping existing structure) */}
+      <section className="py-16 md:py-24 bg-gradient-to-b from-background to-primary">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-card border border-border rounded-2xl p-8 hover:border-gold/50 transition-all group"
+            >
+              <div className="w-16 h-16 rounded-xl bg-gold/10 flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors">
+                <GameController size={32} weight="bold" className="text-gold" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Otherworlds</h3>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                Dive into our original anime-inspired game featuring stunning visuals, immersive gameplay, and a captivating story that will keep you engaged for hours.
+              </p>
+              <Button
+                onClick={() => onNavigate('game')}
+                className="bg-gold text-gold-foreground hover:bg-gold/90"
+              >
+                Learn More
+                <ArrowRight weight="bold" className="ml-2" />
+              </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-card border border-border rounded-2xl p-8 hover:border-gold/50 transition-all group"
+            >
+              <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
+                <Users size={32} weight="bold" className="text-accent" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Join Our Community</h3>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                Connect with fellow anime enthusiasts, share your collection, participate in events, and stay updated with the latest releases and exclusive drops.
+              </p>
+              <Button
+                onClick={() => onNavigate('community')}
+                variant="outline"
+                className="border-accent/30 hover:border-accent hover:bg-accent/10"
+              >
+                Join Now
+                <ArrowRight weight="bold" className="ml-2" />
+              </Button>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+import { ShoppingCart, List, X } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+
+interface NavbarProps {
+  cartCount: number
+  onCartClick: () => void
+  currentPage: string
+  onNavigate: (page: string) => void
+}
+
+export function Navbar({ cartCount, onCartClick, currentPage, onNavigate }: NavbarProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Reordered navigation items with Shop after Home
+  const navItems = [
+    { label: 'Home', value: 'home' },
+    { label: 'Shop', value: 'shop' },
+    { label: 'Game', value: 'game' },
+    { label: 'Community', value: 'community' },
+    { label: 'About', value: 'about' }
+  ]
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-all duration-300">
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => onNavigate('home')}
+            className="flex items-center gap-3 group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-gold flex items-center justify-center font-bold text-gold-foreground text-xl group-hover:scale-105 transition-transform">
+              AV
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold text-foreground group-hover:text-gold transition-colors">
+                The Anime Vault
+              </span>
+            </div>
+          </button>
+
+          {/* Enhanced desktop navigation with hover glow effects */}
+          <div className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
+              <Button
+                key={item.value}
+                variant="ghost"
+                onClick={() => onNavigate(item.value)}
+                className={cn(
+                  'text-base font-medium transition-all relative group px-6 py-2',
+                  currentPage === item.value
+                    ? 'text-gold hover:text-gold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <span className="relative z-10">{item.label}</span>
+                
+                {/* Hover underline glow effect */}
+                <div className={cn(
+                  'absolute bottom-0 left-1/2 h-0.5 bg-gradient-to-r from-gold via-yellow-400 to-gold transition-all duration-300 transform -translate-x-1/2',
+                  currentPage === item.value
+                    ? 'w-full opacity-100 shadow-lg shadow-gold/50'
+                    : 'w-0 opacity-0 group-hover:w-full group-hover:opacity-100 group-hover:shadow-md group-hover:shadow-gold/30'
+                )} />
+                
+                {/* Subtle background glow on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/5 to-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onCartClick}
+              className="relative border-gold/20 hover:border-gold hover:bg-gold/10 group"
+            >
+              <ShoppingCart className="text-gold group-hover:scale-110 transition-transform" weight="bold" />
+              {cartCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-gold text-gold-foreground animate-pulse">
+                  {cartCount}
+                </Badge>
+              )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden"
+            >
+              {mobileMenuOpen ? <X weight="bold" /> : <List weight="bold" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Enhanced mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4 flex flex-col gap-2 border-t border-border pt-4">
+            {navItems.map((item) => (
+              <Button
+                key={item.value}
+                variant="ghost"
+                onClick={() => {
+                  onNavigate(item.value)
+                  setMobileMenuOpen(false)
+                }}
+                className={cn(
+                  'justify-start text-base font-medium relative group',
+                  currentPage === item.value
+                    ? 'text-gold bg-gold/10'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <span className="relative z-10">{item.label}</span>
+                
+                {/* Mobile active indicator */}
+                {currentPage === item.value && (
+                  <div className="absolute left-2 top-1/2 w-1 h-6 bg-gold rounded-full transform -translate-y-1/2" />
+                )}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+    </nav>
+  )
+}
