@@ -3,16 +3,29 @@
 ## 📋 Setup Instructies
 
 ### 1. Environment Variables Instellen
-1. Kopieer `.env.example` naar `.env`
-2. Vul je WooCommerce gegevens in:
-   ```
-   VITE_WOOCOMMERCE_CONSUMER_KEY=ck_aa109cf58a0f5e68cce0566dd5583e8c5acfb119
-   VITE_WOOCOMMERCE_CONSUMER_SECRET=cs_4bfd39d74df661f279a2fc7976a5082e3f7d8f1a
-   VITE_WOOCOMMERCE_URL=https://jouw-webshop.com
-   ```
+
+Er zijn twee scenario’s: lokaal ontwikkelen (Vite dev server) en productie op Vercel. In beide gevallen worden je secrets NIET naar de browser gestuurd.
+
+• Lokaal (Vite dev proxy gebruikt server-side env):
+1) Kopieer `.env.example` naar `.env`
+2) Vul deze waarden in:
+```
+WOOCOMMERCE_URL=https://jouw-webshop.com
+WOOCOMMERCE_CONSUMER_KEY=<ck_...>
+WOOCOMMERCE_CONSUMER_SECRET=<cs_...>
+```
+
+• Productie (Vercel serverless proxy op /api/wc):
+Voeg in Vercel Project Settings → Environment Variables toe:
+```
+NEXT_PUBLIC_WC_URL=https://jouw-webshop.com
+WOOCOMMERCE_CONSUMER_KEY=<ck_...>
+WOOCOMMERCE_CONSUMER_SECRET=<cs_...>
+```
+De frontend blijft altijd praten met `/api/wc`, dus er is geen code-aanpassing nodig tussen dev en prod.
 
 ### 2. WooCommerce Store URL
-Je moet nog de juiste URL van je WooCommerce store invullen in de `.env` file bij `VITE_WOOCOMMERCE_URL`.
+Vul je echte store URL in bij `WOOCOMMERCE_URL` (lokaal) en `NEXT_PUBLIC_WC_URL` (Vercel).
 
 ### 3. Test de Verbinding
 1. Start de development server: `npm run dev`
@@ -22,15 +35,15 @@ Je moet nog de juiste URL van je WooCommerce store invullen in de `.env` file bi
 ## 🛡️ Security
 
 ### API Keys Beveiliging:
-- ✅ API keys staan in `.env` file (wordt niet gepusht naar Git)
-- ✅ `.env` staat in `.gitignore`
-- ✅ `.env.example` bevat alleen voorbeelden
-- ⚠️ **Let op**: Vite `VITE_` prefix maakt variabelen zichtbaar in browser (voor frontend API calls)
+- ✅ Secrets leven alleen server-side (dev: Vite proxy, prod: Vercel function)
+- ✅ `.env` staat in `.gitignore` en komt niet in Git
+- ✅ `.env.example` bevat enkel placeholders
+- 🚫 Geen keys met `VITE_` prefix gebruiken in productie; die zouden client-side zichtbaar zijn
 
 ### Aanbevelingen:
-1. **Productie**: Gebruik aparte API keys voor development/productie
-2. **Permissions**: Zet API key permissions zo laag mogelijk (alleen Read voor publieke data)
-3. **CORS**: Configureer CORS instellingen in WooCommerce voor je domains
+1. Gebruik aparte READ-only keys voor development en productie
+2. Beperk permissies (bij voorkeur alleen Read voor publieke shopdata)
+3. Voor niet-same-origin scenario’s: CORS correct instellen (niet nodig wanneer frontend → eigen `/api/wc` proxy gaat)
 
 ## 📦 Beschikbare Functies
 
@@ -52,6 +65,10 @@ const categoryProducts = await wooCommerceService.getProductsByCategory(123)
 const { data: categories } = await wooCommerceService.getCategories()
 ```
 
+Onder water spreekt de service altijd met `/api/wc/...`:
+- Dev: Vite dev server proxyt `'/api/wc' -> '{WOOCOMMERCE_URL}/wp-json/wc/v3'` met Basic Auth
+- Prod (Vercel): Serverless function in `api/wc/[...path].ts` doet dezelfde proxy met je Vercel env vars
+
 ### Product Data Conversie
 ```typescript
 // WooCommerce product naar lokaal formaat
@@ -71,8 +88,8 @@ const localProduct = convertWooCommerceProduct(wooCommerceProduct)
 ### Veelvoorkomende Problemen:
 
 **CORS Errors:**
-- Voeg je development URL toe aan WooCommerce CORS instellingen
-- Check WordPress plugin voor CORS support
+- Gebruik de ingebouwde proxy (`/api/wc`); dan is er doorgaans geen CORS nodig
+- Alleen als je rechtstreeks naar de store zou callen is CORS relevant
 
 **Authentication Failed:**
 - Controleer Consumer Key en Secret
