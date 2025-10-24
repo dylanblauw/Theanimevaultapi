@@ -41,7 +41,18 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       if (selectedCategory) params.category = selectedCategory
       
       const result = await wooCommerceService.getProducts(params)
-      const convertedProducts = result.data.map(convertWooCommerceProduct)
+      // Defensive: handle unexpected response shapes gracefully
+      const list = Array.isArray(result.data) ? result.data : []
+      if (!Array.isArray(result.data)) {
+        // Surface a clearer message in the UI
+        console.error('Unexpected WooCommerce response:', result)
+        throw new Error(
+          typeof (result as any)?.data?.message === 'string'
+            ? (result as any).data.message
+            : 'Onverwachte API-respons (geen lijst met producten)'
+        )
+      }
+      const convertedProducts = list.map(convertWooCommerceProduct)
       
       setProducts(convertedProducts)
       setTotalPages(result.totalPages)
