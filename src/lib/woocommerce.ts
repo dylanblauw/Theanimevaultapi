@@ -1,16 +1,48 @@
 import axios from 'axios'
 
-// Axios instance pointing at the Vite dev proxy.
-// In dev, vite.config.ts proxies /api/wc/* -> {WC_URL}/wp-json/wc/v3/* with Basic Auth from server-side env.
-// In production, ensure your hosting provides a similar proxy and keep this baseURL the same.
-const api = axios.create({
+// Primary: call our server-side proxy
+const proxyApi = axios.create({
   baseURL: '/api/wc',
-  headers: {
-    'Accept': 'application/json'
-  },
-  // withCredentials not needed for Basic auth via proxy; keep false to avoid cookie issues
+  headers: { 'Accept': 'application/json' },
   withCredentials: false,
 })
+
+// Optional fallback: call WooCommerce directly from the browser (uses VITE_ envs)
+const DIRECT_URL = (import.meta as any).env?.VITE_WOOCOMMERCE_URL || ''
+const DIRECT_CK = (import.meta as any).env?.VITE_WOOCOMMERCE_CONSUMER_KEY || ''
+const DIRECT_CS = (import.meta as any).env?.VITE_WOOCOMMERCE_CONSUMER_SECRET || ''
+const hasDirect = Boolean(DIRECT_URL && DIRECT_CK && DIRECT_CS)
+
+const directApi = hasDirect
+  ? axios.create({
+      baseURL: DIRECT_URL.replace(/\/$/, '') + '/wp-json/wc/v3',
+      headers: { 'Accept': 'application/json' },
+      withCredentials: false,
+      params: {
+        consumer_key: DIRECT_CK,
+        consumer_secret: DIRECT_CS,
+      },
+    })
+  : null
+
+async function getWithFallback<T = any>(path: string, options?: { params?: any }) {
+  // 1) Try server proxy
+  try {
+    return await proxyApi.get<T>(path, options)
+  } catch (err: any) {
+    const status = err?.response?.status
+    const data = err?.response?.data
+    // 2) If proxy blocked (401/403/5xx) and we have direct credentials, try direct request
+    if (directApi && (status === 401 || status === 403 || status >= 500)) {
+      return await directApi.get<T>(path, options)
+    }
+    // 3) Rethrow with more details for UI
+    const message = typeof data?.message === 'string' ? data.message : err?.message || 'Request failed'
+    const error = new Error(message)
+    ;(error as any).response = err?.response
+    throw error
+  }
+}
 
 export interface WooCommerceProduct {
   id: number
@@ -111,7 +143,7 @@ export const wooCommerceService = {
     order?: 'asc' | 'desc'
   } = {}) {
     try {
-      const response = await api.get('/products', { params })
+  const response = await getWithFallback('/products', { params })
       return {
         data: response.data as WooCommerceProduct[],
         headers: response.headers as Record<string, string>,
@@ -127,7 +159,7 @@ export const wooCommerceService = {
   // Get single product
   async getProduct(id: number) {
     try {
-      const response = await api.get(`/products/${id}`)
+  const response = await getWithFallback(`/products/${id}`)
       return response.data as WooCommerceProduct
     } catch (error) {
       console.error('Error fetching product:', error)
@@ -144,7 +176,7 @@ export const wooCommerceService = {
     order?: 'asc' | 'desc'
   } = {}) {
     try {
-      const response = await api.get('/products/categories', { params })
+  const response = await getWithFallback('/products/categories', { params })
       return {
         data: response.data,
         headers: response.headers as Record<string, string>,
@@ -189,7 +221,7 @@ export const wooCommerceService = {
   // Test API connection
   async testConnection() {
     try {
-      const response = await api.get('/products', { params: { per_page: 1 } })
+  const response = await getWithFallback('/products', { params: { per_page: 1 } })
       return {
         success: true,
         message: 'API connection successful',
