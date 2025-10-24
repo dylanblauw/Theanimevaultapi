@@ -52,9 +52,10 @@ export default async function handler(req: any, res: any) {
     const init: any = {
       method: req.method,
       headers: {
-        // Keep Basic header for hosts that accept it
-        'Authorization': `Basic ${basicAuth}`,
+        // Prefer query-string auth for maximum WooCommerce compatibility
+        // (some hosts block Basic auth from serverless fetch).
         'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         // Only set content-type if body exists; fetch will add boundary for form-data otherwise
         ...(req.body ? { 'Content-Type': req.headers['content-type'] || 'application/json' } : {})
       },
