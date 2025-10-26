@@ -34,7 +34,7 @@ export function Navbar({ cartCount, onCartClick, currentPage, onNavigate }: Navb
             <img 
               src={logoImage} 
               alt="The Anime Vault Logo" 
-              className="w-12 h-12 object-cover rounded-full group-hover:scale-105 transition-transform shadow-lg shadow-gold/30"
+              className="w-12 h-12 object-contain object-bottom rounded-full group-hover:scale-105 transition-transform shadow-lg shadow-gold/30 translate-y-[2px]"
             />
             <div className="flex flex-col">
               <span className="text-xl font-bold text-foreground group-hover:text-gold transition-colors">

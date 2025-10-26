@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer'
 import { Separator } from '@/components/ui/separator'
 import { CartItem } from '@/lib/types'
+import { useCurrency } from '@/lib/currency'
 
 interface CartDrawerProps {
   open: boolean
@@ -13,6 +14,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ open, onOpenChange, items, onUpdateQuantity, onRemoveItem }: CartDrawerProps) {
+  const { format } = useCurrency()
   const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
   return (
@@ -57,7 +59,7 @@ export function CartDrawer({ open, onOpenChange, items, onUpdateQuantity, onRemo
                     <h4 className="font-semibold text-sm line-clamp-2 mb-1">
                       {item.product.name}
                     </h4>
-                    <p className="text-gold font-bold">${item.product.price}</p>
+                    <p className="text-gold font-bold">{format(item.product.price)}</p>
                     
                     <div className="flex items-center gap-2 mt-2">
                       <Button
@@ -100,7 +102,7 @@ export function CartDrawer({ open, onOpenChange, items, onUpdateQuantity, onRemo
           <div className="border-t border-border p-6 space-y-4 bg-card">
             <div className="flex items-center justify-between text-lg">
               <span className="font-semibold">Total</span>
-              <span className="font-bold text-gold text-2xl">${total.toFixed(2)}</span>
+              <span className="font-bold text-gold text-2xl">{format(total)}</span>
             </div>
             
             <Separator />

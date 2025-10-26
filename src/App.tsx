@@ -15,6 +15,7 @@ import { products as localProducts } from '@/lib/products'
 import { Product, CartItem } from '@/lib/types'
 import { backgrounds, PageType } from '@/lib/backgrounds'
 import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce'
+import { CurrencyProvider } from '@/lib/currency'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
@@ -105,6 +106,7 @@ function App() {
   const currentBackground = backgrounds[currentPage as PageType] || backgrounds.home
 
   return (
+    <CurrencyProvider>
     <div className="min-h-screen flex flex-col text-foreground relative">
       {/* Dynamic background */}
       <div 
@@ -170,6 +172,7 @@ function App() {
 
       <Toaster position="top-right" richColors />
     </div>
+    </CurrencyProvider>
   )
 }
 

@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GameController, DownloadSimple, Star, Users } from '@phosphor-icons/react'
 
+const DISCORD_INVITE = (import.meta as any).env?.VITE_DISCORD_INVITE || 'https://discord.com/invite/'
+
 export function GamePage() {
   return (
     <div className="min-h-screen">
@@ -28,13 +30,15 @@ export function GamePage() {
             </p>
             
             <div className="flex flex-wrap gap-4">
-              <Button 
-                size="lg"
-                className="bg-gold text-gold-foreground hover:bg-gold/90 text-base px-8 h-12 glow-gold"
-              >
-                <DownloadSimple weight="bold" className="mr-2" />
-                Download Now
-              </Button>
+              <a href={DISCORD_INVITE} target="_blank" rel="noreferrer">
+                <Button 
+                  size="lg"
+                  className="bg-gradient-to-r from-gold via-yellow-400 to-gold text-black hover:from-yellow-400 hover:via-gold hover:to-yellow-400 text-base px-8 h-12 font-bold shadow-lg shadow-gold/50 hover:shadow-xl hover:shadow-gold/70 transition-all duration-300"
+                >
+                  <DownloadSimple weight="bold" className="mr-2" />
+                  Join Us
+                </Button>
+              </a>
               
               <Button 
                 size="lg"
@@ -157,13 +161,15 @@ export function GamePage() {
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Join thousands of players in the ever-expanding world of Otherworlds
           </p>
-          <Button 
-            size="lg"
-            className="bg-gold text-gold-foreground hover:bg-gold/90 text-base px-12 h-14 glow-gold-strong"
-          >
-            <DownloadSimple weight="bold" className="mr-2" size={24} />
-            Download Free
-          </Button>
+          <a href={DISCORD_INVITE} target="_blank" rel="noreferrer">
+            <Button 
+              size="lg"
+              className="bg-gradient-to-r from-gold via-yellow-400 to-gold text-black hover:from-yellow-400 hover:via-gold hover:to-yellow-400 text-base px-12 h-14 font-bold shadow-lg shadow-gold/50 hover:shadow-xl hover:shadow-gold/70 transition-all duration-300"
+            >
+              <DownloadSimple weight="bold" className="mr-2" size={24} />
+              Join Us
+            </Button>
+          </a>
         </div>
       </section>
     </div>

@@ -69,7 +69,24 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const loadCategories = async () => {
     try {
       const result = await wooCommerceService.getCategories({ per_page: 50 })
-      setCategories(result.data)
+      const desiredOrder = [
+        'Gaming',
+        'Apparel',
+        'Back to School',
+        'Accessories',
+        'Prints & Posters',
+      ]
+      const list = Array.isArray(result.data) ? result.data : []
+      // Sort by desired order if names match, keep others after
+      list.sort((a: any, b: any) => {
+        const ia = desiredOrder.indexOf(a?.name)
+        const ib = desiredOrder.indexOf(b?.name)
+        if (ia === -1 && ib === -1) return a.name.localeCompare(b.name)
+        if (ia === -1) return 1
+        if (ib === -1) return -1
+        return ia - ib
+      })
+      setCategories(list)
     } catch (err: any) {
       console.error('Failed to load categories:', err)
     }
@@ -111,7 +128,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           </h1>
           
           <p className="text-xl text-white leading-relaxed text-enhanced-light">
-            Ontdek authentieke anime merchandise en exclusieve collectibles
+            Discover authentic anime merchandise and exclusive collectibles
           </p>
         </motion.div>
 
@@ -121,7 +138,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
             <div className="relative">
               <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={16} />
               <Input
-                placeholder="Zoek producten..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 bg-black/20 border-gold/20 text-white placeholder:text-white/50"
@@ -132,7 +149,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="bg-black/20 border border-gold/20 rounded-md px-3 py-2 text-white"
             >
-              <option value="">Alle categorieën</option>
+              <option value="">All categories</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name} ({category.count})
@@ -153,7 +170,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
                   : 'border-gold/20 text-white hover:border-gold'
               )}
             >
-              Alle
+              All
             </Button>
             {categories.slice(0, 6).map((category) => (
               <Button
@@ -184,13 +201,13 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         {error && !loading && (
           <Card className="p-8 bg-red-500/10 border-red-500/20 text-center mb-8">
             <Warning className="mx-auto text-red-400 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-red-400 mb-2">Fout bij laden van producten</h3>
+            <h3 className="text-xl font-bold text-red-400 mb-2">Error loading products</h3>
             <p className="text-white/70 mb-4">{error}</p>
             <Button
               onClick={() => loadProducts(currentPage)}
               className="bg-gradient-to-r from-gold to-blue-500 text-white"
             >
-              Probeer opnieuw
+              Try again
             </Button>
           </Card>
         )}
@@ -204,7 +221,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
               </h2>
               {totalPages > 1 && (
                 <div className="text-white/70">
-                  Pagina {currentPage} van {totalPages}
+                  Page {currentPage} of {totalPages}
                 </div>
               )}
             </div>
@@ -248,7 +265,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
                   onClick={() => loadProducts(currentPage - 1)}
                   className="border-gold/20 text-white hover:border-gold"
                 >
-                  Vorige
+                  Previous
                 </Button>
                 
                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
@@ -277,7 +294,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
                   onClick={() => loadProducts(currentPage + 1)}
                   className="border-gold/20 text-white hover:border-gold"
                 >
-                  Volgende
+                  Next
                 </Button>
               </div>
             )}
@@ -286,8 +303,8 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
             {products.length === 0 && (
               <Card className="p-12 bg-black/40 backdrop-blur-sm border-gold/20 text-center">
                 <div className="text-6xl mb-4">🛒</div>
-                <h3 className="text-xl font-bold text-white mb-2">Geen producten gevonden</h3>
-                <p className="text-white/70">Probeer je zoekopdracht of filters aan te passen</p>
+                <h3 className="text-xl font-bold text-white mb-2">No products found</h3>
+                <p className="text-white/70">Try adjusting your search or filters</p>
               </Card>
             )}
           </>

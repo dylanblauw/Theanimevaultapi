@@ -3,9 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Checkbox } from '@/components/ui/checkbox'
 import { User, Package, Heart, Gear, ShoppingBag, Crown } from '@phosphor-icons/react'
+import { useCurrency } from '@/lib/currency'
 
 export function AccountPage() {
+  const { format } = useCurrency()
   return (
     <div className="min-h-screen py-12 bg-black/20 backdrop-blur-sm">
       <div className="container mx-auto px-6">
@@ -26,19 +29,19 @@ export function AccountPage() {
         <div className="max-w-6xl mx-auto">
           <Tabs defaultValue="profile" className="space-y-8">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-black/40 backdrop-blur-sm">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
+              <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-gold data-[state=active]:text-white">
                 <User size={16} />
                 Profile
               </TabsTrigger>
-              <TabsTrigger value="orders" className="flex items-center gap-2">
+              <TabsTrigger value="orders" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-gold data-[state=active]:text-white">
                 <Package size={16} />
                 Orders
               </TabsTrigger>
-              <TabsTrigger value="wishlist" className="flex items-center gap-2">
+              <TabsTrigger value="wishlist" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-gold data-[state=active]:text-white">
                 <Heart size={16} />
                 Wishlist
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
+              <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-gold data-[state=active]:text-white">
                 <Gear size={16} />
                 Settings
               </TabsTrigger>
@@ -94,7 +97,7 @@ export function AccountPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-gold">€{(99.99 * order).toFixed(2)}</p>
+                        <p className="font-semibold text-gold">{format(99.99 * order)}</p>
                         <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">
                           Delivered
                         </span>
@@ -113,7 +116,7 @@ export function AccountPage() {
                       <Heart size={32} className="text-gold" />
                     </div>
                     <h3 className="font-semibold text-white mb-2">Anime Figure #{item}</h3>
-                    <p className="text-gold font-bold">€{(29.99 + item * 10).toFixed(2)}</p>
+                    <p className="text-gold font-bold">{format(29.99 + item * 10)}</p>
                     <Button size="sm" className="w-full mt-3 bg-gold hover:bg-gold/90 text-black">
                       Add to Cart
                     </Button>
@@ -132,7 +135,7 @@ export function AccountPage() {
                       <h3 className="font-semibold text-white">Email Notifications</h3>
                       <p className="text-sm text-white/70">Receive updates about new releases and orders</p>
                     </div>
-                    <input type="checkbox" className="toggle" defaultChecked />
+                    <Checkbox className="size-6" defaultChecked />
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border border-gold/20 rounded-lg">
@@ -140,7 +143,7 @@ export function AccountPage() {
                       <h3 className="font-semibold text-white">SMS Notifications</h3>
                       <p className="text-sm text-white/70">Get shipping updates via SMS</p>
                     </div>
-                    <input type="checkbox" className="toggle" />
+                    <Checkbox className="size-6" />
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border border-gold/20 rounded-lg">
@@ -148,7 +151,7 @@ export function AccountPage() {
                       <h3 className="font-semibold text-white">Marketing Communications</h3>
                       <p className="text-sm text-white/70">Receive special offers and promotions</p>
                     </div>
-                    <input type="checkbox" className="toggle" defaultChecked />
+                    <Checkbox className="size-6" defaultChecked />
                   </div>
                 </div>
                 

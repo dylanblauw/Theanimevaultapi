@@ -4,8 +4,10 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { CreditCard, MapPin, User, ShoppingBag, CheckCircle } from '@phosphor-icons/react'
+import { useCurrency } from '@/lib/currency'
 
 export function CheckoutPage() {
+  const { format } = useCurrency()
   return (
     <div className="min-h-screen py-12 bg-black/20 backdrop-blur-sm">
       <div className="container mx-auto px-6">
@@ -119,7 +121,7 @@ export function CheckoutPage() {
                     <h3 className="font-semibold text-white">Anime Figure Collection #{item}</h3>
                     <p className="text-sm text-white/70">Quantity: 1</p>
                   </div>
-                  <div className="text-gold font-bold">€{(49.99 + item * 10).toFixed(2)}</div>
+                  <div className="text-gold font-bold">{format(49.99 + item * 10)}</div>
                 </div>
               ))}
             </div>
@@ -129,20 +131,20 @@ export function CheckoutPage() {
             <div className="space-y-3">
               <div className="flex justify-between text-white">
                 <span>Subtotal</span>
-                <span>€189.97</span>
+                <span>{format(189.97)}</span>
               </div>
               <div className="flex justify-between text-white">
                 <span>Shipping</span>
-                <span>€9.99</span>
+                <span>{format(9.99)}</span>
               </div>
               <div className="flex justify-between text-white">
                 <span>Tax</span>
-                <span>€19.99</span>
+                <span>{format(19.99)}</span>
               </div>
               <Separator className="bg-gold/20" />
               <div className="flex justify-between text-xl font-bold">
                 <span className="text-white">Total</span>
-                <span className="gradient-text-primary">€219.95</span>
+                <span className="gradient-text-primary">{format(219.95)}</span>
               </div>
             </div>
 

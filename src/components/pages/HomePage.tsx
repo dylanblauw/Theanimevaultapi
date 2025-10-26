@@ -63,14 +63,12 @@ export function HomePage({ featuredProducts, onAddToCart, onViewDetails, onNavig
               
               <Button 
                 size="lg"
-                variant="outline"
                 onClick={() => onNavigate('game')}
-                className="border-2 border-blue-500/50 hover:border-blue-400 bg-black/20 hover:bg-blue-500/10 text-white text-base px-8 h-12 font-bold relative overflow-hidden group transition-all duration-300 hover:scale-105"
+                className="bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600 text-white hover:from-sky-500 hover:via-blue-600 hover:to-sky-500 text-base px-8 h-12 font-bold shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/60 transition-all duration-300 hover:scale-105"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-400/20 to-blue-500/0 opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300"></div>
-                <GameController weight="bold" className="mr-2 relative z-10" />
-                <span className="relative z-10">Explore Otherworlds</span>
-                <div className="absolute inset-0 rounded-md shadow-[0_0_15px_rgba(59,130,246,0.5)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <GameController weight="bold" className="mr-2" />
+                Explore Otherworlds
+                <ArrowRight weight="bold" className="ml-2" />
               </Button>
             </div>
           </motion.div>
@@ -93,46 +91,54 @@ export function HomePage({ featuredProducts, onAddToCart, onViewDetails, onNavig
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {featuredProducts.map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group relative"
-              >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left: Featured Merch grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+              {featuredProducts.slice(0,4).map((product, index) => (
                 <motion.div
-                  whileHover={{ 
-                    scale: 1.05,
-                    rotateY: 5,
-                    rotateX: 5
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-gold/20 hover:border-gold/50 transition-all duration-300"
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group relative"
                 >
-                  {/* Glow effect on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  
-                  <ProductCard
-                    product={product}
-                    onAddToCart={onAddToCart}
-                    onViewDetails={onViewDetails}
-                  />
-                  
-                  {/* Price and name overlay on hover */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileHover={{ opacity: 1, y: 0 }}
-                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"
+                    whileHover={{ scale: 1.05, rotateY: 5, rotateX: 5 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-gold/20 hover:border-gold/50 transition-all duration-300"
                   >
-                    <h3 className="text-white font-bold text-lg mb-1">{product.name}</h3>
-                    <p className="text-gold font-bold text-xl">€{product.price.toFixed(2)}</p>
+                    <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <ProductCard product={product} onAddToCart={onAddToCart} onViewDetails={onViewDetails} />
                   </motion.div>
                 </motion.div>
-              </motion.div>
-            ))}
+              ))}
+            </div>
+
+            {/* Right: Featured Modpack */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-card border border-border rounded-2xl p-8 flex flex-col justify-between overflow-hidden"
+            >
+              <div>
+                <div className="w-16 h-16 rounded-xl bg-blue-500/15 flex items-center justify-center mb-6">
+                  <GameController size={32} weight="bold" className="text-blue-400" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">Featured Modpack</h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Jump into our curated Otherworlds Modpack with optimized settings, shaders, and assets for the best experience.
+                </p>
+              </div>
+              <Button
+                onClick={() => onNavigate('game')}
+                className="bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600 text-white hover:from-sky-500 hover:via-blue-600 hover:to-sky-500"
+              >
+                Explore Modpack
+                <ArrowRight weight="bold" className="ml-2" />
+              </Button>
+            </motion.div>
           </div>
 
           <div className="text-center mt-12">

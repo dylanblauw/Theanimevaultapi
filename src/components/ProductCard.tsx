@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Product } from '@/lib/types'
+import { useCurrency } from '@/lib/currency'
 import { cn } from '@/lib/utils'
 
 interface ProductCardProps {
@@ -13,6 +14,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
+  const { format } = useCurrency()
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -78,7 +80,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           </div>
 
           <div className="flex items-center justify-between pt-2">
-            <span className="text-2xl font-bold text-gold">${product.price}</span>
+            <span className="text-2xl font-bold text-gold">{format(product.price)}</span>
             <Button
               size="sm"
               onClick={() => onAddToCart(product)}
