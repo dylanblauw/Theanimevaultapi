@@ -1,5 +1,6 @@
 import { ShoppingCart, List, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,21 @@ export function Navbar({ cartCount, onCartClick, currentPage, onNavigate }: Navb
     { label: 'Gamers Corner', value: 'game' },
     { label: 'My Account', value: 'account' }
   ]
+
+  const desiredCategories = [
+    'Gaming',
+    'Apparel',
+    'Back to School',
+    'Accessories',
+    'Prints & Posters',
+  ]
+
+  function goToCategory(name: string) {
+    try {
+      window.localStorage.setItem('shop-category', name)
+    } catch {}
+    onNavigate('shop')
+  }
 
   return (
     <nav className="sticky top-0 z-50 border-b-2 border-gradient-to-r from-gold via-blue-500 to-gold bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl shadow-2xl transition-all duration-300">
@@ -65,6 +81,24 @@ export function Navbar({ cartCount, onCartClick, currentPage, onNavigate }: Navb
                 )}
               </Button>
             ))}
+            {/* Shop category dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-blue-500/50 text-white hover:border-gold hover:bg-gold/10"
+                >
+                  Browse Categories
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-56">
+                {desiredCategories.map((name) => (
+                  <DropdownMenuItem key={name} onClick={() => goToCategory(name)}>
+                    {name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="flex items-center gap-2">

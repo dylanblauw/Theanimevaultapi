@@ -9,7 +9,8 @@
         "build": "tsc -b --noCheck && vite build",
         "lint": "eslint .",
         "optimize": "vite optimize",
-        "preview": "vite preview"
+          "preview": "vite preview",
+          "woo:setup-categories": "ts-node ./scripts/woo/setup-categories.ts"
     },
     "dependencies": {
         "@github/spark": "^0.41.12",
@@ -89,6 +90,7 @@
         "globals": "^16.0.0",
         "tailwindcss": "^4.1.11",
         "typescript": "^5.9.3",
+        "ts-node": "^10.9.2",
         "typescript-eslint": "^8.38.0",
         "vite": "^6.4.0"
     },

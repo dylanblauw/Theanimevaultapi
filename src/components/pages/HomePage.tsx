@@ -120,24 +120,41 @@ export function HomePage({ featuredProducts, onAddToCart, onViewDetails, onNavig
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="bg-card border border-border rounded-2xl p-8 flex flex-col justify-between overflow-hidden"
+              className="bg-card border border-border rounded-2xl p-8 flex flex-col justify-between overflow-hidden relative"
             >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full"></div>
               <div>
-                <div className="w-16 h-16 rounded-xl bg-blue-500/15 flex items-center justify-center mb-6">
+                <div className="w-16 h-16 rounded-xl bg-blue-500/15 flex items-center justify-center mb-6 relative z-10">
                   <GameController size={32} weight="bold" className="text-blue-400" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4">Featured Modpack</h3>
-                <p className="text-muted-foreground mb-6 leading-relaxed">
-                  Jump into our curated Otherworlds Modpack with optimized settings, shaders, and assets for the best experience.
+                <h3 className="text-2xl font-bold mb-2">OtherWorlds Awakening</h3>
+                <p className="text-sm text-blue-400 mb-4">Minecraft Modpack</p>
+                <p className="text-muted-foreground mb-6 leading-relaxed text-sm">
+                  Step into a world of magic, machines, and monsters. Built around the Tensura Reincarnated mod and inspired by <em>That Time I Got Reincarnated as a Slime</em>, harness powerful abilities, build thriving colonies with MineColonies, and automate with Create.
                 </p>
               </div>
-              <Button
-                onClick={() => onNavigate('game')}
-                className="bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600 text-white hover:from-sky-500 hover:via-blue-600 hover:to-sky-500"
-              >
-                Explore Modpack
-                <ArrowRight weight="bold" className="ml-2" />
-              </Button>
+              <div className="flex gap-3">
+                <a 
+                  href="https://www.curseforge.com/minecraft/modpacks/otherworlds-awakening" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                >
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600 text-white hover:from-sky-500 hover:via-blue-600 hover:to-sky-500"
+                  >
+                    Download Modpack
+                    <ArrowRight weight="bold" className="ml-2" />
+                  </Button>
+                </a>
+                <Button
+                  onClick={() => onNavigate('game')}
+                  variant="outline"
+                  className="border-blue-500/50 text-white hover:border-blue-400 hover:bg-blue-500/10"
+                >
+                  Learn More
+                </Button>
+              </div>
             </motion.div>
           </div>
 

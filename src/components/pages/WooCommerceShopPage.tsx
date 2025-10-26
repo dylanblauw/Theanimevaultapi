@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { MagnifyingGlass, CircleNotch, Warning } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce'
+import { useKV } from '@github/spark/hooks'
 
 interface WooCommerceShopPageProps {
   onAddToCart: (product: Product) => void
@@ -24,6 +25,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [pendingCategoryName, setPendingCategoryName] = useKV<string>('shop-category', '')
 
   // Load products from WooCommerce
   const loadProducts = async (page = 1) => {
@@ -87,6 +89,12 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         return ia - ib
       })
       setCategories(list)
+      // If a category name was chosen from Navbar, select its id
+      if (pendingCategoryName) {
+        const match = list.find((c: any) => String(c.name).toLowerCase() === String(pendingCategoryName).toLowerCase())
+        if (match) setSelectedCategory(String(match.id))
+        setPendingCategoryName('')
+      }
     } catch (err: any) {
       console.error('Failed to load categories:', err)
     }
