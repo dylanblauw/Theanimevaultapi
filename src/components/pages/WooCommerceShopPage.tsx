@@ -108,7 +108,8 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
 
   // Reload when filters change
   useEffect(() => {
-    if (!loading) {
+    // Skip the initial load (already done above)
+    if (categories.length > 0) {
       loadProducts(1)
     }
   }, [selectedCategory, searchQuery])
