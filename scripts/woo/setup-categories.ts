@@ -10,6 +10,7 @@
     $env:WOOCOMMERCE_URL="https://theanimevault.net"; $env:WOOCOMMERCE_CONSUMER_KEY="ck_..."; $env:WOOCOMMERCE_CONSUMER_SECRET="cs_..."; npm run woo:setup-categories
 */
 
+// @ts-ignore - ESM default import
 import WooCommerceRestApi from '@woocommerce/woocommerce-rest-api'
 // Minimal Node globals for editor friendliness (no @types/node required here)
 declare const process: any
@@ -20,7 +21,10 @@ const REQUIRED = (name: string) => {
   return v
 }
 
-const api = new WooCommerceRestApi({
+// @ts-ignore
+const WooCommerce = WooCommerceRestApi.default || WooCommerceRestApi
+
+const api = new WooCommerce({
   url: REQUIRED('WOOCOMMERCE_URL'),
   consumerKey: REQUIRED('WOOCOMMERCE_CONSUMER_KEY'),
   consumerSecret: REQUIRED('WOOCOMMERCE_CONSUMER_SECRET'),

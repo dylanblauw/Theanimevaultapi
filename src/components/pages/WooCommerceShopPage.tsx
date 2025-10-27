@@ -70,7 +70,10 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   // Load categories from WooCommerce
   const loadCategories = async () => {
     try {
+      console.log('Loading categories...')
       const result = await wooCommerceService.getCategories({ per_page: 50 })
+      console.log('Categories result:', result)
+      
       const desiredOrder = [
         'Gaming',
         'Apparel',
@@ -79,8 +82,13 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         'Prints & Posters',
       ]
       const list = Array.isArray(result.data) ? result.data : []
+      console.log('Categories list:', list)
+      
+      // Filter out categories with 0 products
+      const activeCategories = list.filter((cat: any) => cat.count > 0)
+      
       // Sort by desired order if names match, keep others after
-      list.sort((a: any, b: any) => {
+      activeCategories.sort((a: any, b: any) => {
         const ia = desiredOrder.indexOf(a?.name)
         const ib = desiredOrder.indexOf(b?.name)
         if (ia === -1 && ib === -1) return a.name.localeCompare(b.name)
@@ -88,15 +96,19 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         if (ib === -1) return -1
         return ia - ib
       })
-      setCategories(list)
+      
+      console.log('Setting categories:', activeCategories)
+      setCategories(activeCategories)
+      
       // If a category name was chosen from Navbar, select its id
       if (pendingCategoryName) {
-        const match = list.find((c: any) => String(c.name).toLowerCase() === String(pendingCategoryName).toLowerCase())
+        const match = activeCategories.find((c: any) => String(c.name).toLowerCase() === String(pendingCategoryName).toLowerCase())
         if (match) setSelectedCategory(String(match.id))
         setPendingCategoryName('')
       }
     } catch (err: any) {
       console.error('Failed to load categories:', err)
+      console.error('Error details:', err.response?.data || err.message)
     }
   }
 
