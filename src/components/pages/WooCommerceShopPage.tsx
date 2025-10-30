@@ -10,6 +10,7 @@ import { MagnifyingGlass, CircleNotch, Warning } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce'
 import { useKV } from '@github/spark/hooks'
+import { products as fallbackProducts } from '@/lib/products'
 
 interface WooCommerceShopPageProps {
   onAddToCart: (product: Product) => void
@@ -60,8 +61,51 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       setTotalPages(result.totalPages)
       setCurrentPage(page)
     } catch (err: any) {
-      setError(err.message || 'Failed to load products')
       console.error('Error loading products:', err)
+      console.log('🔄 Using fallback products for local development')
+      
+      // Use fallback products for local development
+      let filteredProducts = [...fallbackProducts]
+      console.log('📦 Total fallback products available:', filteredProducts.length)
+      
+      // Apply category filter if selected
+      if (selectedCategory) {
+        // Map fallback category IDs to names for filtering
+        const categoryMap: { [key: string]: string } = {
+          '1': 'Collectibles',
+          '2': 'Apparel', 
+          '3': 'Accessories',
+          '4': 'Art',
+        }
+        const categoryName = categoryMap[selectedCategory]
+        if (categoryName) {
+          filteredProducts = fallbackProducts.filter(p => p.category === categoryName)
+        }
+      }
+      
+      // Apply search filter if provided
+      if (searchQuery) {
+        filteredProducts = filteredProducts.filter(p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      }
+      
+      // Simulate pagination
+      const perPage = 12
+      const totalItems = filteredProducts.length
+      const totalPages = Math.ceil(totalItems / perPage)
+      const startIndex = (page - 1) * perPage
+      const endIndex = startIndex + perPage
+      const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
+      
+      console.log('🎯 Filtered products:', filteredProducts.length)
+      console.log('📄 Page', page, 'of', totalPages, '- showing', paginatedProducts.length, 'products')
+      
+      setProducts(paginatedProducts)
+      setTotalPages(totalPages)
+      setCurrentPage(page)
+      setError(null) // Clear error since fallback worked
     } finally {
       setLoading(false)
     }
@@ -113,11 +157,10 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       // Fallback categories for local development when API is not available
       console.log('Using fallback categories for local development')
       const fallbackCategories = [
-        { id: 1, name: 'Gaming', count: 5 },
-        { id: 2, name: 'Apparel', count: 8 },
-        { id: 3, name: 'Back to School', count: 3 },
-        { id: 4, name: 'Accessories', count: 6 },
-        { id: 5, name: 'Prints & Posters', count: 4 },
+        { id: 1, name: 'Collectibles', count: 5 },
+        { id: 2, name: 'Apparel', count: 3 },
+        { id: 3, name: 'Accessories', count: 2 },
+        { id: 4, name: 'Art', count: 3 },
       ]
       setCategories(fallbackCategories)
     }
