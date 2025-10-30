@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ProductCard } from '@/components/ProductCard'
 import { Product } from '@/lib/types'
@@ -194,6 +194,64 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const [totalPages, setTotalPages] = useState(1)
   const [pendingCategoryName, setPendingCategoryName] = useKV<string>('shop-category', '')
 
+  // Category mapping for filtering
+  const categoryMap: { [key: string]: string } = {
+    '1': 'Back to School',
+    '2': 'New', 
+    '3': 'Accessories',
+    '4': 'Bags',
+    '5': 'Gaming',
+    '6': 'Journal', 
+    '7': 'Shirts'
+  }
+
+  // Filter products based on category and search
+  const filteredProducts = useMemo(() => {
+    console.log('=== FILTERING PRODUCTS ===')
+    console.log('Selected category:', selectedCategory)
+    console.log('Search query:', searchQuery)
+    console.log('Available products:', products.length)
+    console.log('Available realistic products:', realisticProducts.length)
+    
+    // Use realistic products as fallback
+    const sourceProducts = products.length > 0 ? products : realisticProducts
+    console.log('Using source products:', sourceProducts.length, 'products')
+    
+    let filtered = sourceProducts
+    
+    // Filter by category
+    if (selectedCategory && selectedCategory !== '') {
+      console.log('Filtering by category:', selectedCategory)
+      const categoryName = categoryMap[selectedCategory] || selectedCategory
+      console.log('Category name to filter by:', categoryName)
+      
+      filtered = sourceProducts.filter(product => {
+        console.log(`Product ${product.name} category:`, product.category)
+        const hasCategory = product.category?.toLowerCase() === categoryName.toLowerCase()
+        console.log(`Product ${product.name} matches category ${categoryName}:`, hasCategory)
+        return hasCategory
+      })
+      
+      console.log('Products after category filter:', filtered.length)
+      console.log('Filtered products:', filtered.map(p => p.name))
+    } else {
+      console.log('Showing all products (no category filter)')
+    }
+    
+    // Filter by search term
+    if (searchQuery) {
+      console.log('Applying search filter:', searchQuery)
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      console.log('Products after search filter:', filtered.length)
+    }
+    
+    console.log('Final filtered products:', filtered.length)
+    return filtered
+  }, [products, selectedCategory, searchQuery])
+
   // Load products from WooCommerce OR fallback
   const loadProducts = async (page = 1) => {
     setLoading(true)
@@ -360,6 +418,8 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const handleCategoryChange = (categoryId: string) => {
     console.log('=== CATEGORY CHANGE ===')
     console.log('New category ID:', categoryId)
+    console.log('Available realistic products:', realisticProducts.length)
+    console.log('First realistic product:', realisticProducts[0])
     const categoryNames = {
       '1': 'Back to School',
       '2': 'New', 
@@ -476,7 +536,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">
-                Producten <Badge className="bg-gold text-black ml-2">{products.length}</Badge>
+                Producten <Badge className="bg-gold text-black ml-2">{filteredProducts.length}</Badge>
               </h2>
               {totalPages > 1 && (
                 <div className="text-white/70">
@@ -485,35 +545,44 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {products.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group relative"
-                >
+            {filteredProducts.length === 0 ? (
+              <Card className="p-8 bg-black/20 backdrop-blur-sm border-gold/20 text-center">
+                <p className="text-white/70 text-lg">No products found matching your criteria.</p>
+                {selectedCategory && (
+                  <p className="text-white/50 mt-2">Try selecting a different category or clear the search.</p>
+                )}
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                {filteredProducts.map((product, index) => (
                   <motion.div
-                    whileHover={{ 
-                      scale: 1.03,
-                      rotateY: 2,
-                    }}
-                    transition={{ duration: 0.2 }}
-                    className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-gold/20 hover:border-gold/50 transition-all duration-300"
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="group relative"
                   >
-                    {/* Glow effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    
-                    <ProductCard
-                      product={product}
-                      onAddToCart={onAddToCart}
-                      onViewDetails={onViewDetails}
-                    />
+                    <motion.div
+                      whileHover={{ 
+                        scale: 1.03,
+                        rotateY: 2,
+                      }}
+                      transition={{ duration: 0.2 }}
+                      className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-gold/20 hover:border-gold/50 transition-all duration-300"
+                    >
+                      {/* Glow effect on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      <ProductCard
+                        product={product}
+                        onAddToCart={onAddToCart}
+                        onViewDetails={onViewDetails}
+                      />
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
