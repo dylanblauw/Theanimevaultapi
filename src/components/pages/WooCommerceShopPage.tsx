@@ -27,11 +27,19 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [pendingCategoryName, setPendingCategoryName] = useKV<string>('shop-category', '')
+  const [useFallback, setUseFallback] = useState(false)
 
   // Load products from WooCommerce
   const loadProducts = async (page = 1) => {
     setLoading(true)
     setError(null)
+    
+    // If we're in fallback mode, skip API call and use fallback directly
+    if (useFallback) {
+      loadFallbackProducts(page)
+      return
+    }
+    
     try {
       const params: any = { 
         per_page: 12,
@@ -62,59 +70,66 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       setCurrentPage(page)
     } catch (err: any) {
       console.error('Error loading products:', err)
-      console.log('🔄 Using fallback products for local development')
-      
-      // Use fallback products for local development
-      let filteredProducts = [...fallbackProducts]
-      console.log('📦 Total fallback products available:', filteredProducts.length)
-      console.log('📋 Available product categories:', [...new Set(fallbackProducts.map(p => p.category))])
-      
-      // Apply category filter if selected
-      if (selectedCategory) {
-        console.log('🏷️ Selected category ID:', selectedCategory)
-        // Map fallback category IDs to names for filtering
-        const categoryMap: { [key: string]: string } = {
-          '1': 'Collectibles',
-          '2': 'Apparel', 
-          '3': 'Accessories',
-          '4': 'Art',
-        }
-        const categoryName = categoryMap[selectedCategory]
-        console.log('🎯 Mapped category name:', categoryName)
-        if (categoryName) {
-          filteredProducts = fallbackProducts.filter(p => p.category === categoryName)
-          console.log(`🔍 Products in category "${categoryName}":`, filteredProducts.length)
-        } else {
-          console.log('❌ No category mapping found for ID:', selectedCategory)
-        }
-      }
-      
-      // Apply search filter if provided
-      if (searchQuery) {
-        filteredProducts = filteredProducts.filter(p =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      }
-      
-      // Simulate pagination
-      const perPage = 12
-      const totalItems = filteredProducts.length
-      const totalPages = Math.ceil(totalItems / perPage)
-      const startIndex = (page - 1) * perPage
-      const endIndex = startIndex + perPage
-      const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
-      
-      console.log('🎯 Filtered products:', filteredProducts.length)
-      console.log('📄 Page', page, 'of', totalPages, '- showing', paginatedProducts.length, 'products')
-      
-      setProducts(paginatedProducts)
-      setTotalPages(totalPages)
-      setCurrentPage(page)
-      setError(null) // Clear error since fallback worked
+      console.log('🔄 Switching to fallback mode')
+      setUseFallback(true)
+      loadFallbackProducts(page)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Load fallback products for local development
+  const loadFallbackProducts = (page = 1) => {
+    console.log('🔄 Using fallback products for local development')
+    
+    // Use fallback products for local development
+    let filteredProducts = [...fallbackProducts]
+    console.log('📦 Total fallback products available:', filteredProducts.length)
+    console.log('📋 Available product categories:', [...new Set(fallbackProducts.map(p => p.category))])
+    
+    // Apply category filter if selected
+    if (selectedCategory) {
+      console.log('🏷️ Selected category ID:', selectedCategory)
+      // Map fallback category IDs to names for filtering
+      const categoryMap: { [key: string]: string } = {
+        '1': 'Collectibles',
+        '2': 'Apparel', 
+        '3': 'Accessories',
+        '4': 'Art',
+      }
+      const categoryName = categoryMap[selectedCategory]
+      console.log('🎯 Mapped category name:', categoryName)
+      if (categoryName) {
+        filteredProducts = fallbackProducts.filter(p => p.category === categoryName)
+        console.log(`🔍 Products in category "${categoryName}":`, filteredProducts.length)
+      } else {
+        console.log('❌ No category mapping found for ID:', selectedCategory)
+      }
+    }
+    
+    // Apply search filter if provided
+    if (searchQuery) {
+      filteredProducts = filteredProducts.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+    
+    // Simulate pagination
+    const perPage = 12
+    const totalItems = filteredProducts.length
+    const totalPages = Math.ceil(totalItems / perPage)
+    const startIndex = (page - 1) * perPage
+    const endIndex = startIndex + perPage
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
+    
+    console.log('🎯 Filtered products:', filteredProducts.length)
+    console.log('📄 Page', page, 'of', totalPages, '- showing', paginatedProducts.length, 'products')
+    
+    setProducts(paginatedProducts)
+    setTotalPages(totalPages)
+    setCurrentPage(page)
+    setError(null) // Clear error since fallback worked
   }
 
   // Load categories from WooCommerce
@@ -192,6 +207,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   }
 
   const handleCategoryChange = (categoryId: string) => {
+    console.log('🔄 Category change requested:', categoryId)
     setSelectedCategory(categoryId)
     setCurrentPage(1)
   }
