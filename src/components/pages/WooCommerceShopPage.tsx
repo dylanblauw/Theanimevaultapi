@@ -10,7 +10,7 @@ import { MagnifyingGlass, CircleNotch, Warning } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce'
 import { useKV } from '@github/spark/hooks'
-import { products as fallbackProducts } from '@/lib/products'
+import { products as fallbackProducts } from '@/lib/products-new'
 
 interface WooCommerceShopPageProps {
   onAddToCart: (product: Product) => void
@@ -75,21 +75,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         }
         const categoryName = categoryMap[selectedCategory]
         if (categoryName) {
-          // Map old categories to new ones for existing products
-          const categoryMappings: { [key: string]: string[] } = {
-            'Back to School': ['Accessories'], // Map school items to accessories
-            'New': ['Collectibles', 'Apparel', 'Art', 'Accessories'], // New can be anything
-            'Accessories': ['Accessories'],
-            'Bags': ['Accessories'], // Bags are accessories
-            'Gaming': ['Collectibles'], // Gaming items are collectibles
-            'Journal': ['Art'], // Journals are art/stationery
-            'Shirts': ['Apparel'], // Shirts are apparel
-          }
-          
-          const allowedCategories = categoryMappings[categoryName] || [categoryName]
-          filteredProducts = fallbackProducts.filter(p => 
-            allowedCategories.includes(p.category)
-          )
+          filteredProducts = fallbackProducts.filter(p => p.category === categoryName)
         }
       }
       
@@ -163,13 +149,13 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       // Fallback categories for local development when API is not available
       console.log('Using fallback categories for local development')
       const fallbackCategories = [
-        { id: 1, name: 'Back to School', count: 27 },
-        { id: 2, name: 'New', count: 111 },
+        { id: 1, name: 'Back to School', count: 1 },
+        { id: 2, name: 'New', count: 2 },
         { id: 3, name: 'Accessories', count: 1 },
-        { id: 4, name: 'Bags', count: 10 },
-        { id: 5, name: 'Gaming', count: 41 },
-        { id: 6, name: 'Journal', count: 14 },
-        { id: 7, name: 'Shirts', count: 21 },
+        { id: 4, name: 'Bags', count: 2 },
+        { id: 5, name: 'Gaming', count: 4 },
+        { id: 6, name: 'Journal', count: 2 },
+        { id: 7, name: 'Shirts', count: 3 },
       ]
       setCategories(fallbackCategories)
     }
