@@ -247,6 +247,7 @@ export function convertWooCommerceProduct(wooProduct: WooCommerceProduct) {
     originalPrice: parseFloat(wooProduct.regular_price) || parseFloat(wooProduct.price) || 0,
     image: wooProduct.images[0]?.src || '/placeholder-product.jpg',
     category: wooProduct.categories[0]?.name || 'General',
+    categories: wooProduct.categories, // Keep full categories array for filtering
     inStock: wooProduct.stock_status === 'instock',
     featured: wooProduct.featured,
     description: wooProduct.description,

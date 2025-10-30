@@ -210,26 +210,39 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     console.log('=== FILTERING PRODUCTS ===')
     console.log('Selected category:', selectedCategory)
     console.log('Search query:', searchQuery)
-    console.log('Available products:', products.length)
-    console.log('Available realistic products:', realisticProducts.length)
+    console.log('Available WooCommerce products:', products.length)
+    console.log('Available realistic fallback products:', realisticProducts.length)
     
-    // Use realistic products as fallback
+    // Always prioritize real WooCommerce products over fallback
     const sourceProducts = products.length > 0 ? products : realisticProducts
     console.log('Using source products:', sourceProducts.length, 'products')
+    console.log('Source type:', products.length > 0 ? 'WooCommerce API' : 'Fallback products')
     
     let filtered = sourceProducts
     
     // Filter by category
     if (selectedCategory && selectedCategory !== '') {
       console.log('Filtering by category:', selectedCategory)
-      const categoryName = categoryMap[selectedCategory] || selectedCategory
-      console.log('Category name to filter by:', categoryName)
+      const categoryId = parseInt(selectedCategory)
+      console.log('Category ID to filter by:', categoryId)
       
       filtered = sourceProducts.filter(product => {
-        console.log(`Product ${product.name} category:`, product.category)
-        const hasCategory = product.category?.toLowerCase() === categoryName.toLowerCase()
-        console.log(`Product ${product.name} matches category ${categoryName}:`, hasCategory)
-        return hasCategory
+        // For WooCommerce products, check the categories array
+        if ('categories' in product && Array.isArray(product.categories)) {
+          console.log(`WooCommerce product ${product.name} categories:`, product.categories)
+          const hasCategory = product.categories.some((cat: any) => cat.id === categoryId)
+          console.log(`Product ${product.name} matches category ID ${categoryId}:`, hasCategory)
+          return hasCategory
+        } 
+        // For fallback products, use the old category mapping
+        else if ('category' in product) {
+          const categoryName = categoryMap[selectedCategory] || selectedCategory
+          console.log(`Fallback product ${product.name} category:`, product.category)
+          const hasCategory = product.category?.toLowerCase() === categoryName.toLowerCase()
+          console.log(`Product ${product.name} matches category ${categoryName}:`, hasCategory)
+          return hasCategory
+        }
+        return false
       })
       
       console.log('Products after category filter:', filtered.length)
@@ -243,7 +256,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       console.log('Applying search filter:', searchQuery)
       filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
       )
       console.log('Products after search filter:', filtered.length)
     }
@@ -260,14 +273,15 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     try {
       // Try WooCommerce API first
       const params: any = { 
-        per_page: 12,
+        per_page: 100, // Load more products to have enough for filtering
         page,
         orderby: 'menu_order',
         order: 'asc'
       }
       
-      if (searchQuery) params.search = searchQuery
-      if (selectedCategory) params.category = selectedCategory
+      // Don't apply server-side filtering, let client-side filtering handle it
+      // if (searchQuery) params.search = searchQuery
+      // if (selectedCategory) params.category = selectedCategory
       
       const result = await wooCommerceService.getProducts(params)
       const list = Array.isArray(result.data) ? result.data : []
@@ -276,60 +290,25 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       }
       const convertedProducts = list.map(convertWooCommerceProduct)
       
+      console.log('=== LOADED WOOCOMMERCE PRODUCTS ===')
+      console.log('Total products loaded:', convertedProducts.length)
+      console.log('First product:', convertedProducts[0])
+      console.log('Categories in first product:', convertedProducts[0]?.categories)
+      
       setProducts(convertedProducts)
-      setTotalPages(result.totalPages)
+      setTotalPages(Math.ceil(result.total / 12)) // Use 12 for display pagination
       setCurrentPage(page)
       
     } catch (err: any) {
       console.error('WooCommerce API failed, using fallback products')
-      console.log('=== DEBUGGING FALLBACK ===')
-      console.log('Fallback products length:', realisticProducts.length)
-      console.log('Selected category:', selectedCategory)
-      console.log('Search query:', searchQuery)
+      console.log('Error details:', err.message)
       
-      // Use fallback products
-      let filteredProducts = [...realisticProducts]
-      console.log('Initial filtered products:', filteredProducts.length)
+      // Clear products so fallback system kicks in in useMemo
+      setProducts([])
+      setTotalPages(1)
+      setCurrentPage(1)
       
-      // Apply category filter
-      if (selectedCategory) {
-        const categoryMap: { [key: string]: string } = {
-          '1': 'Back to School',
-          '2': 'New',
-          '3': 'Accessories', 
-          '4': 'Bags',
-          '5': 'Gaming',
-          '6': 'Journal',
-          '7': 'Shirts',
-        }
-        const categoryName = categoryMap[selectedCategory]
-        console.log('Category name mapped to:', categoryName)
-        if (categoryName) {
-          filteredProducts = realisticProducts.filter(p => p.category === categoryName)
-          console.log('Products after category filter:', filteredProducts.length)
-          console.log('Products found:', filteredProducts.map(p => p.name))
-        }
-      }
-      
-      // Apply search filter
-      if (searchQuery) {
-        filteredProducts = filteredProducts.filter(p =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      }
-      
-      // Pagination
-      const perPage = 12
-      const totalItems = filteredProducts.length
-      const totalPages = Math.ceil(totalItems / perPage)
-      const startIndex = (page - 1) * perPage
-      const paginatedProducts = filteredProducts.slice(startIndex, startIndex + perPage)
-      
-      setProducts(paginatedProducts)
-      setTotalPages(totalPages)
-      setCurrentPage(page)
-      setError(null)
+      setError('Using local development products (WooCommerce API not available)')
     }
     
     setLoading(false)

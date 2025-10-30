@@ -4,6 +4,7 @@ export interface Product {
   price: number
   image: string
   category: string
+  categories?: Array<{ id: number; name: string; slug: string }> // For WooCommerce products
   description: string
   rating: number
   inStock: boolean
