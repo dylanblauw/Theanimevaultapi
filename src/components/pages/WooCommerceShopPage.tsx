@@ -12,11 +12,70 @@ import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce
 import { useKV } from '@github/spark/hooks'
 import { products as fallbackProducts } from '@/lib/products'
 
-// Override with realistic products based on theanimevault.net
+// Override with realistic products based on theanimevault.net REAL analysis
 const realisticProducts = [
-  // Gaming products
+  // Back to School - Canvas Classic Backpacks 
   {
     id: '1',
+    name: 'Otaku On-The-Go: Canvas Classic Backpack',
+    price: 68.30,
+    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
+    category: 'Back to School',
+    description: 'The Anime Enthusiast\'s Canvas Classic Backpack. Perfect for back to school.',
+    rating: 4.6,
+    inStock: true,
+    featured: true
+  },
+  {
+    id: '2',
+    name: 'Anime Canvas Backpack - School Edition',
+    price: 68.30,
+    image: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=800&q=80',
+    category: 'Back to School',
+    description: 'Perfect canvas backpack for school with anime designs.',
+    rating: 4.5,
+    inStock: true
+  },
+
+  // Journal - D&D and Anime Aesthetic Journals
+  {
+    id: '3',
+    name: 'Unlock Your Creativity: D&D Aesthetic Matte Hardcover Journal',
+    price: 22.00,
+    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80',
+    category: 'Journal',
+    description: 'D&D Aesthetic Matte Hardcover Journal for your creative writing.',
+    rating: 4.7,
+    inStock: true,
+    featured: true
+  },
+  {
+    id: '4',
+    name: 'Unlock Your Creativity: Anime Aesthetic Matte Hardcover Journal', 
+    price: 22.00,
+    image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=800&q=80',
+    category: 'Journal',
+    description: 'Anime Aesthetic Matte Hardcover Journal for anime fans.',
+    rating: 4.8,
+    inStock: true
+  },
+
+  // Accessories - Car Seat Covers
+  {
+    id: '5',
+    name: 'Polyester Car Seat Covers',
+    price: 90.00,
+    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
+    category: 'Accessories',
+    description: 'High-quality polyester car seat covers with anime designs.',
+    rating: 4.4,
+    inStock: true,
+    featured: true
+  },
+
+  // Gaming - Playmats and LED Mouse Pads
+  {
+    id: '6',
     name: 'Desk/Gaming Playmat - Anime Edition',
     price: 46.60,
     image: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=800&q=80',
@@ -27,7 +86,7 @@ const realisticProducts = [
     featured: true
   },
   {
-    id: '2',
+    id: '7',
     name: 'Gamer\'s Glow: The Ultimate LED Mouse Pad',
     price: 47.90,
     image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80',
@@ -38,7 +97,7 @@ const realisticProducts = [
     featured: true
   },
   {
-    id: '3',
+    id: '8',
     name: 'RGB Gaming Mousepad - Large',
     price: 42.50,
     image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=800&q=80',
@@ -47,19 +106,10 @@ const realisticProducts = [
     rating: 4.7,
     inStock: true
   },
+
+  // Shirts - Premium Microfiber-Knit Tees
   {
-    id: '4',
-    name: 'Pro Gaming Desk Mat XL',
-    price: 39.99,
-    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
-    category: 'Gaming',
-    description: 'Extra large desk mat for complete gaming setup coverage.',
-    rating: 4.6,
-    inStock: true
-  },
-  // Shirts products
-  {
-    id: '5',
+    id: '9',
     name: 'Premium Microfiber-Knit Tee: Dragon Ball Z',
     price: 55.42,
     image: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=800&q=80',
@@ -70,7 +120,7 @@ const realisticProducts = [
     featured: true
   },
   {
-    id: '6',
+    id: '10',
     name: 'Premium Microfiber-Knit Tee: Naruto',
     price: 55.42,
     image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80',
@@ -81,7 +131,7 @@ const realisticProducts = [
     featured: true
   },
   {
-    id: '7',
+    id: '11',
     name: 'Premium Microfiber-Knit Tee: One Piece',
     price: 55.42,
     image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=800&q=80',
@@ -90,58 +140,41 @@ const realisticProducts = [
     rating: 4.7,
     inStock: true
   },
-  // Bags products
+
+  // Bags - Canvas Backpacks (different from Back to School)
   {
-    id: '8',
-    name: 'Otaku On-The-Go: Canvas Classic Backpack',
+    id: '12',
+    name: 'Canvas Classic Backpack - Travel Edition',
     price: 68.30,
     image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
     category: 'Bags',
-    description: 'The Anime Enthusiast\'s Canvas Classic Backpack. Perfect for daily use.',
+    description: 'Premium canvas backpack perfect for travel and daily use.',
     rating: 4.6,
+    inStock: true
+  },
+
+  // New - Mix of newest products
+  {
+    id: '13',
+    name: 'NEW: Limited Edition Gaming Mat',
+    price: 52.99,
+    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80',
+    category: 'New',
+    description: 'Brand new limited edition gaming mat with exclusive anime artwork.',
+    rating: 4.9,
     inStock: true,
     featured: true
   },
   {
-    id: '9',
-    name: 'Anime Canvas Backpack - Black Edition',
-    price: 68.30,
-    image: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=800&q=80',
-    category: 'Bags',
-    description: 'Stylish black canvas backpack for anime enthusiasts.',
-    rating: 4.5,
-    inStock: true
-  },
-  // Other categories
-  {
-    id: '10',
-    name: 'Anime Sketch Journal - Hardcover',
-    price: 28.99,
-    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80',
-    category: 'Journal',
-    description: 'High-quality hardcover journal perfect for anime sketches and notes.',
-    rating: 4.7,
-    inStock: true
-  },
-  {
-    id: '11',
-    name: 'Anime Pin Collection Set',
-    price: 19.99,
-    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
-    category: 'Accessories',
-    description: 'Collection of premium anime character pins.',
+    id: '14',
+    name: 'NEW: Anime Tee Collection 2024',
+    price: 58.99,
+    image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=800&q=80',
+    category: 'New',
+    description: 'Latest addition to our premium tee collection.',
     rating: 4.8,
-    inStock: true
-  },
-  {
-    id: '12',
-    name: 'Anime Pencil Case Set',
-    price: 16.99,
-    image: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=800&q=80',
-    category: 'Back to School',
-    description: 'Complete pencil case set with anime designs.',
-    rating: 4.5,
-    inStock: true
+    inStock: true,
+    featured: true
   }
 ]
 
