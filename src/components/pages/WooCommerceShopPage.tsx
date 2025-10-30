@@ -109,6 +109,17 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     } catch (err: any) {
       console.error('Failed to load categories:', err)
       console.error('Error details:', err.response?.data || err.message)
+      
+      // Fallback categories for local development when API is not available
+      console.log('Using fallback categories for local development')
+      const fallbackCategories = [
+        { id: 1, name: 'Gaming', count: 5 },
+        { id: 2, name: 'Apparel', count: 8 },
+        { id: 3, name: 'Back to School', count: 3 },
+        { id: 4, name: 'Accessories', count: 6 },
+        { id: 5, name: 'Prints & Posters', count: 4 },
+      ]
+      setCategories(fallbackCategories)
     }
   }
 
