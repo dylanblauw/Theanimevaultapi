@@ -27,20 +27,14 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [pendingCategoryName, setPendingCategoryName] = useKV<string>('shop-category', '')
-  const [useFallback, setUseFallback] = useState(false)
 
-  // Load products from WooCommerce
+  // Load products from WooCommerce OR fallback
   const loadProducts = async (page = 1) => {
     setLoading(true)
     setError(null)
     
-    // If we're in fallback mode, skip API call and use fallback directly
-    if (useFallback) {
-      loadFallbackProducts(page)
-      return
-    }
-    
     try {
+      // Try WooCommerce API first
       const params: any = { 
         per_page: 12,
         page,
@@ -52,84 +46,75 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       if (selectedCategory) params.category = selectedCategory
       
       const result = await wooCommerceService.getProducts(params)
-      // Defensive: handle unexpected response shapes gracefully
       const list = Array.isArray(result.data) ? result.data : []
       if (!Array.isArray(result.data)) {
-        // Surface a clearer message in the UI
-        console.error('Unexpected WooCommerce response:', result)
-        throw new Error(
-          typeof (result as any)?.data?.message === 'string'
-            ? (result as any).data.message
-            : 'Onverwachte API-respons (geen lijst met producten)'
-        )
+        throw new Error('Invalid API response')
       }
       const convertedProducts = list.map(convertWooCommerceProduct)
       
       setProducts(convertedProducts)
       setTotalPages(result.totalPages)
       setCurrentPage(page)
+      
     } catch (err: any) {
-      console.error('Error loading products:', err)
-      console.log('🔄 Switching to fallback mode')
-      setUseFallback(true)
-      loadFallbackProducts(page)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Load fallback products for local development
-  const loadFallbackProducts = (page = 1) => {
-    console.log('🔄 Using fallback products for local development')
-    
-    // Use fallback products for local development
-    let filteredProducts = [...fallbackProducts]
-    console.log('📦 Total fallback products available:', filteredProducts.length)
-    console.log('📋 Available product categories:', [...new Set(fallbackProducts.map(p => p.category))])
-    
-    // Apply category filter if selected
-    if (selectedCategory) {
-      console.log('🏷️ Selected category ID:', selectedCategory)
-      // Map fallback category IDs to names for filtering
-      const categoryMap: { [key: string]: string } = {
-        '1': 'Collectibles',
-        '2': 'Apparel', 
-        '3': 'Accessories',
-        '4': 'Art',
+      console.error('WooCommerce API failed, using fallback products')
+      
+      // Use fallback products
+      let filteredProducts = [...fallbackProducts]
+      
+      // Apply category filter
+      if (selectedCategory) {
+        const categoryMap: { [key: string]: string } = {
+          '1': 'Back to School',
+          '2': 'New',
+          '3': 'Accessories', 
+          '4': 'Bags',
+          '5': 'Gaming',
+          '6': 'Journal',
+          '7': 'Shirts',
+        }
+        const categoryName = categoryMap[selectedCategory]
+        if (categoryName) {
+          // Map old categories to new ones for existing products
+          const categoryMappings: { [key: string]: string[] } = {
+            'Back to School': ['Accessories'], // Map school items to accessories
+            'New': ['Collectibles', 'Apparel', 'Art', 'Accessories'], // New can be anything
+            'Accessories': ['Accessories'],
+            'Bags': ['Accessories'], // Bags are accessories
+            'Gaming': ['Collectibles'], // Gaming items are collectibles
+            'Journal': ['Art'], // Journals are art/stationery
+            'Shirts': ['Apparel'], // Shirts are apparel
+          }
+          
+          const allowedCategories = categoryMappings[categoryName] || [categoryName]
+          filteredProducts = fallbackProducts.filter(p => 
+            allowedCategories.includes(p.category)
+          )
+        }
       }
-      const categoryName = categoryMap[selectedCategory]
-      console.log('🎯 Mapped category name:', categoryName)
-      if (categoryName) {
-        filteredProducts = fallbackProducts.filter(p => p.category === categoryName)
-        console.log(`🔍 Products in category "${categoryName}":`, filteredProducts.length)
-      } else {
-        console.log('❌ No category mapping found for ID:', selectedCategory)
+      
+      // Apply search filter
+      if (searchQuery) {
+        filteredProducts = filteredProducts.filter(p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
       }
+      
+      // Pagination
+      const perPage = 12
+      const totalItems = filteredProducts.length
+      const totalPages = Math.ceil(totalItems / perPage)
+      const startIndex = (page - 1) * perPage
+      const paginatedProducts = filteredProducts.slice(startIndex, startIndex + perPage)
+      
+      setProducts(paginatedProducts)
+      setTotalPages(totalPages)
+      setCurrentPage(page)
+      setError(null)
     }
     
-    // Apply search filter if provided
-    if (searchQuery) {
-      filteredProducts = filteredProducts.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-    
-    // Simulate pagination
-    const perPage = 12
-    const totalItems = filteredProducts.length
-    const totalPages = Math.ceil(totalItems / perPage)
-    const startIndex = (page - 1) * perPage
-    const endIndex = startIndex + perPage
-    const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
-    
-    console.log('🎯 Filtered products:', filteredProducts.length)
-    console.log('📄 Page', page, 'of', totalPages, '- showing', paginatedProducts.length, 'products')
-    
-    setProducts(paginatedProducts)
-    setTotalPages(totalPages)
-    setCurrentPage(page)
-    setError(null) // Clear error since fallback worked
+    setLoading(false)
   }
 
   // Load categories from WooCommerce
@@ -178,10 +163,13 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       // Fallback categories for local development when API is not available
       console.log('Using fallback categories for local development')
       const fallbackCategories = [
-        { id: 1, name: 'Collectibles', count: 5 },
-        { id: 2, name: 'Apparel', count: 3 },
-        { id: 3, name: 'Accessories', count: 2 },
-        { id: 4, name: 'Art', count: 3 },
+        { id: 1, name: 'Back to School', count: 27 },
+        { id: 2, name: 'New', count: 111 },
+        { id: 3, name: 'Accessories', count: 1 },
+        { id: 4, name: 'Bags', count: 10 },
+        { id: 5, name: 'Gaming', count: 41 },
+        { id: 6, name: 'Journal', count: 14 },
+        { id: 7, name: 'Shirts', count: 21 },
       ]
       setCategories(fallbackCategories)
     }
@@ -207,7 +195,18 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   }
 
   const handleCategoryChange = (categoryId: string) => {
-    console.log('🔄 Category change requested:', categoryId)
+    console.log('=== CATEGORY CHANGE ===')
+    console.log('New category ID:', categoryId)
+    const categoryNames = {
+      '1': 'Back to School',
+      '2': 'New', 
+      '3': 'Accessories',
+      '4': 'Bags',
+      '5': 'Gaming',
+      '6': 'Journal', 
+      '7': 'Shirts'
+    }
+    console.log('Category name:', categoryNames[categoryId as keyof typeof categoryNames] || 'All')
     setSelectedCategory(categoryId)
     setCurrentPage(1)
   }
