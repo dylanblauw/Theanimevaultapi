@@ -67,9 +67,11 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       // Use fallback products for local development
       let filteredProducts = [...fallbackProducts]
       console.log('📦 Total fallback products available:', filteredProducts.length)
+      console.log('📋 Available product categories:', [...new Set(fallbackProducts.map(p => p.category))])
       
       // Apply category filter if selected
       if (selectedCategory) {
+        console.log('🏷️ Selected category ID:', selectedCategory)
         // Map fallback category IDs to names for filtering
         const categoryMap: { [key: string]: string } = {
           '1': 'Collectibles',
@@ -78,8 +80,12 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           '4': 'Art',
         }
         const categoryName = categoryMap[selectedCategory]
+        console.log('🎯 Mapped category name:', categoryName)
         if (categoryName) {
           filteredProducts = fallbackProducts.filter(p => p.category === categoryName)
+          console.log(`🔍 Products in category "${categoryName}":`, filteredProducts.length)
+        } else {
+          console.log('❌ No category mapping found for ID:', selectedCategory)
         }
       }
       
@@ -226,7 +232,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
             >
               <option value="">All categories</option>
               {categories.map((category) => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={category.id.toString()}>
                   {category.name} ({category.count})
                 </option>
               ))}
