@@ -218,24 +218,42 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     console.log('Using source products:', sourceProducts.length, 'products')
     console.log('Source type:', products.length > 0 ? 'WooCommerce API' : 'Fallback products')
     
+    // Debug: Log first few products to understand structure
+    if (sourceProducts.length > 0) {
+      console.log('First product structure:', sourceProducts[0])
+      if ('categories' in sourceProducts[0]) {
+        console.log('First product categories:', sourceProducts[0].categories)
+      }
+    }
+    
     let filtered = sourceProducts
     
     // Filter by category
     if (selectedCategory && selectedCategory !== '') {
       console.log('Filtering by category:', selectedCategory)
-      const categoryId = parseInt(selectedCategory)
-      console.log('Category ID to filter by:', categoryId)
       
       filtered = sourceProducts.filter(product => {
         // For WooCommerce products, check the categories array
         if ('categories' in product && Array.isArray(product.categories)) {
           console.log(`WooCommerce product ${product.name} categories:`, product.categories)
-          const hasCategory = product.categories.some((cat: any) => cat.id === categoryId)
-          console.log(`Product ${product.name} matches category ID ${categoryId}:`, hasCategory)
+          
+          // Try both string and number comparison for category ID
+          const categoryId = parseInt(selectedCategory)
+          const categoryIdStr = selectedCategory.toString()
+          
+          const hasCategory = product.categories.some((cat: any) => {
+            const matches = cat.id === categoryId || cat.id === categoryIdStr || 
+                           cat.id.toString() === categoryIdStr ||
+                           cat.name.toLowerCase().includes(selectedCategory.toLowerCase())
+            console.log(`  Category ${cat.name} (ID: ${cat.id}) matches ${selectedCategory}:`, matches)
+            return matches
+          })
+          
+          console.log(`Product ${product.name} matches category ${selectedCategory}:`, hasCategory)
           return hasCategory
         } 
         // For fallback products, use the old category mapping
-        else if ('category' in product) {
+        else if ('category' in product && typeof product.category === 'string') {
           const categoryName = categoryMap[selectedCategory] || selectedCategory
           console.log(`Fallback product ${product.name} category:`, product.category)
           const hasCategory = product.category?.toLowerCase() === categoryName.toLowerCase()
@@ -273,15 +291,13 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     try {
       // Try WooCommerce API first
       const params: any = { 
-        per_page: 100, // Load more products to have enough for filtering
-        page,
+        per_page: 200, // Load enough products to get all 111 NEW + 27 Back to School + others
+        page: 1, // Always load from page 1
         orderby: 'menu_order',
         order: 'asc'
       }
       
-      // Don't apply server-side filtering, let client-side filtering handle it
-      // if (searchQuery) params.search = searchQuery
-      // if (selectedCategory) params.category = selectedCategory
+      console.log('Loading WooCommerce products with params:', params)
       
       const result = await wooCommerceService.getProducts(params)
       const list = Array.isArray(result.data) ? result.data : []
@@ -292,12 +308,30 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       
       console.log('=== LOADED WOOCOMMERCE PRODUCTS ===')
       console.log('Total products loaded:', convertedProducts.length)
-      console.log('First product:', convertedProducts[0])
-      console.log('Categories in first product:', convertedProducts[0]?.categories)
+      if (convertedProducts.length > 0) {
+        console.log('First product:', convertedProducts[0])
+        console.log('Categories in first product:', convertedProducts[0]?.categories)
+        console.log('Sample of all products:')
+        convertedProducts.slice(0, 5).forEach((p, i) => {
+          console.log(`  Product ${i + 1}: ${p.name} - Categories:`, p.categories)
+        })
+        
+        // Show category distribution
+        const categoryCount: { [key: string]: number } = {}
+        convertedProducts.forEach(product => {
+          if (product.categories && Array.isArray(product.categories)) {
+            product.categories.forEach(cat => {
+              categoryCount[cat.name] = (categoryCount[cat.name] || 0) + 1
+            })
+          }
+        })
+        console.log('=== CATEGORY DISTRIBUTION ===')
+        console.log('Category counts from loaded products:', categoryCount)
+      }
       
       setProducts(convertedProducts)
-      setTotalPages(Math.ceil(result.total / 12)) // Use 12 for display pagination
-      setCurrentPage(page)
+      setTotalPages(1) // All products loaded, pagination handled client-side if needed
+      setCurrentPage(1)
       
     } catch (err: any) {
       console.error('WooCommerce API failed, using fallback products')
@@ -345,6 +379,10 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       })
       
       console.log('Setting categories:', activeCategories)
+      console.log('Categories details:')
+      activeCategories.forEach((cat, i) => {
+        console.log(`  Category ${i + 1}: ID=${cat.id}, Name=${cat.name}, Count=${cat.count}`)
+      })
       setCategories(activeCategories)
       
       // If a category name was chosen from Navbar, select its id
@@ -532,35 +570,46 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
                 )}
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                {filteredProducts.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="group relative"
-                  >
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                  {filteredProducts.slice(0, 24).map((product, index) => (
                     <motion.div
-                      whileHover={{ 
-                        scale: 1.03,
-                        rotateY: 2,
-                      }}
-                      transition={{ duration: 0.2 }}
-                      className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-gold/20 hover:border-gold/50 transition-all duration-300"
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="group relative"
                     >
-                      {/* Glow effect on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
-                      <ProductCard
-                        product={product}
-                        onAddToCart={onAddToCart}
-                        onViewDetails={onViewDetails}
-                      />
+                      <motion.div
+                        whileHover={{ 
+                          scale: 1.03,
+                          rotateY: 2,
+                        }}
+                        transition={{ duration: 0.2 }}
+                        className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-gold/20 hover:border-gold/50 transition-all duration-300"
+                      >
+                        {/* Glow effect on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        <ProductCard
+                          product={product}
+                          onAddToCart={onAddToCart}
+                          onViewDetails={onViewDetails}
+                        />
+                      </motion.div>
                     </motion.div>
-                  </motion.div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                
+                {filteredProducts.length > 24 && (
+                  <Card className="p-4 bg-black/20 backdrop-blur-sm border-gold/20 text-center">
+                    <p className="text-white/70">
+                      Showing first 24 of {filteredProducts.length} products. 
+                      Use search or category filters to narrow down results.
+                    </p>
+                  </Card>
+                )}
+              </>
             )}
 
             {/* Pagination */}
