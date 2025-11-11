@@ -533,8 +533,8 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           </div>
         )}
 
-        {/* Error State */}
-        {error && !loading && (
+        {/* Error State - but still show products if available */}
+        {error && !loading && filteredProducts.length === 0 && (
           <Card className="p-8 bg-red-500/10 border-red-500/20 text-center mb-8">
             <Warning className="mx-auto text-red-400 mb-4" size={48} />
             <h3 className="text-xl font-bold text-red-400 mb-2">Error loading products</h3>
@@ -548,8 +548,18 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           </Card>
         )}
 
+        {/* Warning when using fallback products */}
+        {error && !loading && filteredProducts.length > 0 && (
+          <Card className="p-4 bg-yellow-900/20 backdrop-blur-sm border-yellow-500/20 text-center mb-6">
+            <div className="flex items-center justify-center gap-2 text-yellow-400">
+              <Warning size={20} />
+              <span className="text-sm">{error}</span>
+            </div>
+          </Card>
+        )}
+
         {/* Products Grid */}
-        {!loading && !error && (
+        {!loading && (
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">
