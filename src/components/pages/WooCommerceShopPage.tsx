@@ -283,7 +283,21 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
 
     // Category-specific whitelists for stricter control (e.g. Back to School only certain products)
     const categoryWhitelists: Record<string, (p: Product) => boolean> = {
+      // Back to School -> only canvas classic backpacks
       'Back to School': (p: any) => /Otaku On-The-Go.*Canvas Classic Backpack/i.test(p.name || ''),
+      // New -> curated list of newly added products
+      New: (p: any) => {
+        const name = String(p.name || '')
+        const patterns = [
+          /Desk\/?Gaming Playmat/i,
+          /Gamer.?s Glow:.*LED Mouse Pad/i,
+          /Otaku On-The-Go.*Canvas Classic Backpack/i,
+          /Polyester Car Seat Covers/i,
+          /Premium Microfiber-Knit Tee:.*Versatile Style Essential/i,
+          /Unlock Your Creativity.*Matte Hardcover Journal/i,
+        ]
+        return patterns.some((rx) => rx.test(name))
+      },
     }
 
     if (selectedCategory) {
