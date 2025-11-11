@@ -290,21 +290,35 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     
     try {
       // Try WooCommerce API first
-      const params: any = { 
-        per_page: 200, // Load enough products to get all 111 NEW + 27 Back to School + others
-        page: 1, // Always load from page 1
-        orderby: 'menu_order',
-        order: 'asc'
+      // NOTE: WooCommerce caps per_page at 100. Fetch all pages and merge.
+      const PER_PAGE = 100
+      let current = 1
+      const all: any[] = []
+
+      while (true) {
+        const params: any = {
+          per_page: PER_PAGE,
+          page: current,
+          orderby: 'menu_order',
+          order: 'asc',
+        }
+        console.log('Loading WooCommerce products with params:', params)
+        const result = await wooCommerceService.getProducts(params)
+        const list = Array.isArray(result.data) ? result.data : []
+        if (!Array.isArray(result.data)) {
+          throw new Error('Invalid API response')
+        }
+        all.push(...list)
+
+        // Stop when fewer than PER_PAGE items returned or no more pages
+        const totalPages = Number(result.totalPages || 0)
+        if (list.length < PER_PAGE || (totalPages && current >= totalPages)) break
+        // Safety cap to avoid infinite loop
+        if (current >= 10) break
+        current += 1
       }
-      
-      console.log('Loading WooCommerce products with params:', params)
-      
-      const result = await wooCommerceService.getProducts(params)
-      const list = Array.isArray(result.data) ? result.data : []
-      if (!Array.isArray(result.data)) {
-        throw new Error('Invalid API response')
-      }
-      const convertedProducts = list.map(convertWooCommerceProduct)
+
+      const convertedProducts = all.map(convertWooCommerceProduct)
       
       console.log('=== LOADED WOOCOMMERCE PRODUCTS ===')
       console.log('Total products loaded:', convertedProducts.length)
@@ -330,7 +344,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       }
       
       setProducts(convertedProducts)
-      setTotalPages(1) // All products loaded, pagination handled client-side if needed
+  setTotalPages(1) // All products loaded, pagination handled client-side if needed
       setCurrentPage(1)
       
     } catch (err: any) {
