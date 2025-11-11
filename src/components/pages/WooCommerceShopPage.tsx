@@ -534,7 +534,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
               <option value="">All categories</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id.toString()}>
-                  {category.name} ({category.count})
+                  {category.name}
                 </option>
               ))}
             </select>
