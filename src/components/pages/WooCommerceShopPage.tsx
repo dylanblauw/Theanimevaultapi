@@ -278,6 +278,22 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       )
       console.log('Products after search filter:', filtered.length)
     }
+
+    // Category-specific whitelists for stricter control (e.g. Back to School only certain products)
+    const categoryWhitelists: Record<string, (p: Product) => boolean> = {
+      'Back to School': (p: any) => /Otaku On-The-Go.*Canvas Classic Backpack/i.test(p.name || ''),
+    }
+
+    if (selectedCategory) {
+      const categoryName = categoryMap[selectedCategory] || selectedCategory
+      const whitelistFn = categoryWhitelists[categoryName]
+      if (whitelistFn) {
+        console.log(`Applying whitelist for category ${categoryName}`)
+        const before = filtered.length
+        filtered = filtered.filter(whitelistFn)
+        console.log(`Whitelist reduced products from ${before} to ${filtered.length}`)
+      }
+    }
     
     console.log('Final filtered products:', filtered.length)
     return filtered
@@ -595,8 +611,9 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
               </Card>
             ) : (
               <>
+                {/* If a specific category is selected, show ALL filtered products; otherwise cap to 24 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                  {filteredProducts.slice(0, 24).map((product, index) => (
+                  {(selectedCategory ? filteredProducts : filteredProducts.slice(0, 24)).map((product, index) => (
                     <motion.div
                       key={product.id}
                       initial={{ opacity: 0, y: 20 }}
