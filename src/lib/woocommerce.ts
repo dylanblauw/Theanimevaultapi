@@ -7,10 +7,34 @@ const proxyApi = axios.create({
   withCredentials: false,
 })
 
-// Optional fallback: call WooCommerce directly from the browser (uses VITE_ envs)
-const DIRECT_URL = (import.meta as any).env?.VITE_WOOCOMMERCE_URL || ''
-const DIRECT_CK = (import.meta as any).env?.VITE_WOOCOMMERCE_CONSUMER_KEY || ''
-const DIRECT_CS = (import.meta as any).env?.VITE_WOOCOMMERCE_CONSUMER_SECRET || ''
+// Optional fallback: call WooCommerce directly from the browser
+// Read multiple possible env names so it works with Vercel setups that use NEXT_PUBLIC_* as well
+const envVars = ((import.meta as any).env || {}) as Record<string, string | undefined>
+function getEnvVar(...keys: string[]) {
+  for (const k of keys) {
+    const v = envVars[k]
+    if (typeof v === 'string' && v.length > 0) return v
+  }
+  return ''
+}
+
+const DIRECT_URL = getEnvVar(
+  'VITE_WOOCOMMERCE_URL',
+  'NEXT_PUBLIC_WOOCOMMERCE_URL',
+  'NEXT_PUBLIC_WC_URL'
+)
+const DIRECT_CK = getEnvVar(
+  'VITE_WOOCOMMERCE_CONSUMER_KEY',
+  'NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY',
+  'NEXT_PUBLIC_WC_CK',
+  'NEXT_PUBLIC_WC_KEY'
+)
+const DIRECT_CS = getEnvVar(
+  'VITE_WOOCOMMERCE_CONSUMER_SECRET',
+  'NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET',
+  'NEXT_PUBLIC_WC_CS',
+  'NEXT_PUBLIC_WC_SECRET'
+)
 const hasDirect = Boolean(DIRECT_URL && DIRECT_CK && DIRECT_CS)
 
 const directApi = hasDirect
