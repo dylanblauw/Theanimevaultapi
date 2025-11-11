@@ -236,20 +236,22 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         // For WooCommerce products, check the categories array
         if ('categories' in product && Array.isArray(product.categories)) {
           console.log(`WooCommerce product ${product.name} categories:`, product.categories)
-          
-          // Try both string and number comparison for category ID
-          const categoryId = parseInt(selectedCategory)
-          const categoryIdStr = selectedCategory.toString()
-          
+
+          // Map fallback numeric IDs (1..7) to category names for matching
+          const desiredName = (categoryMap[selectedCategory] || selectedCategory || '').toString().toLowerCase()
+          const desiredIdNum = Number.isNaN(parseInt(selectedCategory)) ? undefined : parseInt(selectedCategory)
+          const desiredIdStr = selectedCategory.toString()
+
           const hasCategory = product.categories.some((cat: any) => {
-            const matches = cat.id === categoryId || cat.id === categoryIdStr || 
-                           cat.id.toString() === categoryIdStr ||
-                           cat.name.toLowerCase().includes(selectedCategory.toLowerCase())
-            console.log(`  Category ${cat.name} (ID: ${cat.id}) matches ${selectedCategory}:`, matches)
+            const idMatch = (desiredIdNum !== undefined && cat.id === desiredIdNum) ||
+                            cat.id?.toString?.() === desiredIdStr
+            const nameMatch = String(cat.name || '').toLowerCase() === desiredName
+            const matches = idMatch || nameMatch
+            console.log(`  Category ${cat.name} (ID: ${cat.id}) -> idMatch=${idMatch}, nameMatch=${nameMatch}`)
             return matches
           })
-          
-          console.log(`Product ${product.name} matches category ${selectedCategory}:`, hasCategory)
+
+          console.log(`Product ${product.name} matches category ${selectedCategory}/${desiredName}:`, hasCategory)
           return hasCategory
         } 
         // For fallback products, use the old category mapping
