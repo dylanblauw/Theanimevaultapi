@@ -654,15 +654,6 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
                 </Button>
               </div>
             )}
-
-            {/* Empty State */}
-            {products.length === 0 && (
-              <Card className="p-12 bg-black/40 backdrop-blur-sm border-gold/20 text-center">
-                <div className="text-6xl mb-4">🛒</div>
-                <h3 className="text-xl font-bold text-white mb-2">No products found</h3>
-                <p className="text-white/70">Try adjusting your search or filters</p>
-              </Card>
-            )}
           </>
         )}
       </div>
