@@ -26,6 +26,34 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    // Optional debug: /api/wc?debug=1 — returns env presence and performs a lightweight probe
+    if (req.query && (req.query.debug === '1' || req.query.debug === 'true')) {
+      const probeUrl = `https://api.printify.com/v1/shops/${SHOP_ID}/products.json?limit=1`
+      let probe: any = null
+      try {
+        const r = await fetch(probeUrl, {
+          headers: { 'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`, 'Accept': 'application/json' }
+        })
+        const contentType = r.headers.get('content-type') || ''
+        probe = {
+          url: probeUrl,
+          status: r.status,
+          ok: r.ok,
+          contentType,
+          bodySample: contentType.includes('application/json') ? await r.json() : await r.text(),
+        }
+      } catch (e: any) {
+        probe = { error: e?.message || String(e) }
+      }
+      return res.status(200).json({
+        ok: true,
+        shopId: SHOP_ID,
+        tokenPresent: Boolean(PRINTIFY_API_TOKEN),
+        tokenPrefix: PRINTIFY_API_TOKEN?.slice(0, 10) + '...',
+        probe,
+      })
+    }
+
     const pathParts = ([] as string[]).concat((req.query.path as any) || [])
     const subPath = pathParts.join('/')
 
@@ -90,7 +118,7 @@ export default async function handler(req: any, res: any) {
         : (req.method === 'GET' || req.method === 'HEAD' ? undefined : JSON.stringify(req.body))
     }
 
-    const response = await fetch(target, init)
+  const response = await fetch(target, init)
     const contentType = response.headers.get('content-type') || 'application/json'
 
     res.setHeader('Content-Type', contentType)
