@@ -28,31 +28,73 @@ const SHOP_ID = getEnvVar(
 const hasDirect = Boolean(PRINTIFY_API_TOKEN && SHOP_ID)
 
 async function getWithFallback<T = any>(path: string, options?: { params?: any }) {
-  // Build the Printify API URL
-  const baseUrl = 'https://api.printify.com/v1'
-  const url = `${baseUrl}${path}`
-  
-  // Prepare headers with Bearer token
-  const headers: Record<string, string> = {
-    'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
+  // If we have direct credentials, use them to call Printify API directly
+  if (PRINTIFY_API_TOKEN && SHOP_ID) {
+    console.log('Making direct Printify API call with token:', PRINTIFY_API_TOKEN.substring(0, 10) + '...')
+    console.log('Shop ID:', SHOP_ID)
+    console.log('Path:', path)
+    
+    // Build the Printify API URL
+    const baseUrl = 'https://api.printify.com/v1'
+    const url = `${baseUrl}${path}`
+    
+    // Prepare headers with Bearer token
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+        ...options
+      })
+
+      if (!response.ok) {
+        console.error('Printify API error:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log('Printify API response success:', data)
+      
+      // Mimic axios response structure for compatibility
+      return {
+        data,
+        headers: Object.fromEntries(response.headers.entries()),
+        status: response.status,
+        statusText: response.statusText
+      }
+    } catch (err: any) {
+      console.error('Direct Printify API call failed:', err)
+      // Don't fall back to proxy, throw the error
+      throw err
+    }
   }
 
+  // Fallback to proxy if no direct credentials
+  console.log('No direct Printify credentials, using proxy...')
   try {
-    const response = await fetch(url, {
+    const proxyUrl = `/api/wc${path}`
+    const response = await fetch(proxyUrl, {
       method: 'GET',
-      headers,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
       ...options
     })
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      throw new Error(`Proxy error: HTTP ${response.status}: ${response.statusText}`)
     }
 
     const data = await response.json()
     
-    // Mimic axios response structure for compatibility
     return {
       data,
       headers: Object.fromEntries(response.headers.entries()),
@@ -60,6 +102,7 @@ async function getWithFallback<T = any>(path: string, options?: { params?: any }
       statusText: response.statusText
     }
   } catch (err: any) {
+    console.error('Proxy call failed:', err)
     // Rethrow with more details for UI
     const message = err?.message || 'Request failed'
     const error = new Error(message)
@@ -131,8 +174,8 @@ export interface PrintifyProduct {
   }
 }
 
-//  service functions (renamed but keeping same interface for compatibility)
-export const wooCommerceService = {
+//  service functions (renamed to printifyService for clarity)
+export const printifyService = {
   // Get all products
   async getProducts(params: {
     per_page?: number
@@ -288,7 +331,7 @@ export const wooCommerceService = {
 }
 
 // Utility function to convert Printify product to local Product type
-export function convertWooCommerceProduct(printifyProduct: PrintifyProduct) {
+export function convertPrintifyProduct(printifyProduct: PrintifyProduct) {
   // Get the default variant for pricing
   const defaultVariant = printifyProduct.variants.find(v => v.is_default) || printifyProduct.variants[0]
   const price = defaultVariant ? defaultVariant.price / 100 : 0 // Printify prices are in cents
@@ -333,3 +376,8 @@ export function convertWooCommerceProduct(printifyProduct: PrintifyProduct) {
     stockQuantity: printifyProduct.variants.reduce((total, variant) => total + (variant.quantity || 0), 0)
   }
 }
+
+// Legacy exports for compatibility - gradually migrate these
+export const wooCommerceService = printifyService
+export const convertWooCommerceProduct = convertPrintifyProduct
+export type WooCommerceProduct = PrintifyProduct

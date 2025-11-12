@@ -1,0 +1,35 @@
+[33m3651751[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mprintify-migratie[m[33m, [m[1;31morigin/printify-migratie[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Update API config Printify
+[33m00e2182[m feat(home): add modpack.png image to OtherWorlds Awakening box
+[33m68d8def[m fix(home): replace section with Minecraft Shop button between Download Modpack and Learn More
+[33mc83212a[m feat(home): add Minecraft Shop section between modpack download and learn more
+[33mbecb0e5[m Update README with project overview and setup instructions
+[33m1a31d33[m ui(shop): remove category counts from dropdown labels
+[33mfd72541[m feat(shop): add 'New' category whitelist (playmats, LED mouse pad, backpacks, car seat covers, tees, journals)
+[33m262c829[m fix(shop): category filter maps fallback IDs to real Woo category names (Back to School now matches)
+[33m93a3e7d[m feat(shop): Back to School whitelist + show all products when category selected
+[33m9a5047a[m fix(shop): WooCommerce per_page limit respected (100) + auto paginate to load all products
+[33mc13ea05[m feat(woocommerce): support NEXT_PUBLIC_* envs for direct browser fallback when proxy fails
+[33mc9fc0bd[m Fix: Show fallback products even when WooCommerce API fails
+[33m1634157[m Fix product display issue: show fallback products when WooCommerce API fails
+[33m734ca4b[m Load all WooCommerce products for proper category filtering
+[33m005b241[m Fix category filtering to work with real WooCommerce products
+[33m7fce59f[m test
+[33m8d0e7ba[m Test
+[33m75e2fb3[m test
+[33m32b2a85[m Test
+[33m31fef94[m test
+[33m94e67f4[m Jep
+[33med4b506[m Test 4
+[33m62de509[m Test 2
+[33mf782236[m test 1.0
+[33m098b896[m Test
+[33md96151b[m Test
+[33m3ab1f3f[m Website update V32
+[33m89240f5[m Website update V31
+[33m41e4699[m Website update 30
+[33me15e238[m Vercel check 6.0
+[33m7dc264c[m Vercel update 5.0
+[33m17d7fe9[m Vercel push test 2.0
+[33m41fac10[m Vercel test 1.0
+[33m2ad0e97[m Clean up README by removing initial content
+[33mb856bcf[m Clean Start

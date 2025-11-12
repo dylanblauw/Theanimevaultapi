@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MagnifyingGlass, CircleNotch, Warning } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce'
+import { printifyService, convertPrintifyProduct } from '@/lib/printify'
 import { useKV } from '@github/spark/hooks'
 import { products as fallbackProducts } from '@/lib/products'
 
@@ -178,12 +178,12 @@ const realisticProducts = [
   }
 ]
 
-interface WooCommerceShopPageProps {
+interface ShopPageProps {
   onAddToCart: (product: Product) => void
   onViewDetails: (product: Product) => void
 }
 
-export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceShopPageProps) {
+export function WooCommerceShopPage({ onAddToCart, onViewDetails }: ShopPageProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -210,13 +210,13 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
     console.log('=== FILTERING PRODUCTS ===')
     console.log('Selected category:', selectedCategory)
     console.log('Search query:', searchQuery)
-    console.log('Available WooCommerce products:', products.length)
+    console.log('Available Printify products:', products.length)
     console.log('Available realistic fallback products:', realisticProducts.length)
     
     // Always prioritize real WooCommerce products over fallback
     const sourceProducts = products.length > 0 ? products : realisticProducts
     console.log('Using source products:', sourceProducts.length, 'products')
-    console.log('Source type:', products.length > 0 ? 'WooCommerce API' : 'Fallback products')
+    console.log('Source type:', products.length > 0 ? 'Printify API' : 'Fallback products')
     
     // Debug: Log first few products to understand structure
     if (sourceProducts.length > 0) {
@@ -233,9 +233,9 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       console.log('Filtering by category:', selectedCategory)
       
       filtered = sourceProducts.filter(product => {
-        // For WooCommerce products, check the categories array
+        // For Printify products, check the categories array
         if ('categories' in product && Array.isArray(product.categories)) {
-          console.log(`WooCommerce product ${product.name} categories:`, product.categories)
+          console.log(`Printify product ${product.name} categories:`, product.categories)
 
           // Map fallback numeric IDs (1..7) to category names for matching
           const desiredName = (categoryMap[selectedCategory] || selectedCategory || '').toString().toLowerCase()
@@ -334,8 +334,8 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           orderby: 'menu_order',
           order: 'asc',
         }
-        console.log('Loading WooCommerce products with params:', params)
-        const result = await wooCommerceService.getProducts(params)
+        console.log('Loading Printify products with params:', params)
+        const result = await printifyService.getProducts(params)
         const list = Array.isArray(result.data) ? result.data : []
         if (!Array.isArray(result.data)) {
           throw new Error('Invalid API response')
@@ -350,9 +350,9 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
         current += 1
       }
 
-      const convertedProducts = all.map(convertWooCommerceProduct)
+      const convertedProducts = all.map(convertPrintifyProduct)
       
-      console.log('=== LOADED WOOCOMMERCE PRODUCTS ===')
+      console.log('=== LOADED PRINTIFY PRODUCTS ===')
       console.log('Total products loaded:', convertedProducts.length)
       if (convertedProducts.length > 0) {
         console.log('First product:', convertedProducts[0])
@@ -380,7 +380,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       setCurrentPage(1)
       
     } catch (err: any) {
-      console.error('WooCommerce API failed, using fallback products')
+      console.error('Printify API failed, using fallback products')
       console.log('Error details:', err.message)
       
       // Clear products so fallback system kicks in in useMemo
@@ -388,7 +388,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
       setTotalPages(1)
       setCurrentPage(1)
       
-      setError('Using local development products (WooCommerce API not available)')
+      setError('Using local development products (Printify API not available)')
     }
     
     setLoading(false)
@@ -398,7 +398,7 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
   const loadCategories = async () => {
     try {
       console.log('Loading categories...')
-      const result = await wooCommerceService.getCategories({ per_page: 50 })
+      const result = await printifyService.getCategories({ per_page: 50 })
       console.log('Categories result:', result)
       
       const desiredOrder = [
@@ -594,7 +594,6 @@ export function WooCommerceShopPage({ onAddToCart, onViewDetails }: WooCommerceS
           </Card>
         )}
 
-        {/* Warning when using fallback products */}
         {error && !loading && filteredProducts.length > 0 && (
           <Card className="p-4 bg-yellow-900/20 backdrop-blur-sm border-yellow-500/20 text-center mb-6">
             <div className="flex items-center justify-center gap-2 text-yellow-400">

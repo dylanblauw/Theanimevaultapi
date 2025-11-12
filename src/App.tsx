@@ -14,7 +14,7 @@ import { AccountPage } from '@/components/pages/AccountPage'
 import { products as localProducts } from '@/lib/products'
 import { Product, CartItem } from '@/lib/types'
 import { backgrounds, PageType } from '@/lib/backgrounds'
-import { wooCommerceService, convertWooCommerceProduct } from '@/lib/woocommerce'
+import { wooCommerceService, convertWooCommerceProduct } from '@/lib/printify'
 import { CurrencyProvider } from '@/lib/currency'
 
 function App() {
