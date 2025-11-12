@@ -1,6 +1,3 @@
-// Primary: call our server-side proxy (now for Printify)
-const proxyApi = fetch
-
 // Read multiple possible env names so it works with Vercel setups that use NEXT_PUBLIC_* as well
 const envVars = ((import.meta as any).env || {}) as Record<string, string | undefined>
 function getEnvVar(...keys: string[]) {
@@ -11,83 +8,44 @@ function getEnvVar(...keys: string[]) {
   return ''
 }
 
-const PRINTIFY_API_TOKEN = getEnvVar(
-  'VITE_WOOCOMMERCE_CONSUMER_KEY',
-  'NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY',
-  'NEXT_PUBLIC_WC_CK',
-  'NEXT_PUBLIC_WC_KEY'
-)
-
 // Get SHOP_ID from environment or URL
 const SHOP_ID = getEnvVar(
   'VITE_WOOCOMMERCE_URL',
   'NEXT_PUBLIC_WOOCOMMERCE_URL',
   'NEXT_PUBLIC_WC_URL'
 )
+async function getViaProxy<T = any>(path: string, options?: { params?: Record<string, any> }) {
+  // Always route through our serverless proxy to avoid CORS and keep secrets server-side
+  const base = '/api/wc'
+  const fullPath = path.startsWith('/') ? path : `/${path}`
+  let url = `${base}${fullPath}`
 
-const hasDirect = Boolean(PRINTIFY_API_TOKEN && SHOP_ID)
-
-async function getWithFallback<T = any>(path: string, options?: { params?: any }) {
-  console.log('=== PRINTIFY API CALL ===')
-  console.log('API Token:', PRINTIFY_API_TOKEN ? PRINTIFY_API_TOKEN.substring(0, 10) + '...' : 'NOT SET')
-  console.log('Shop ID:', SHOP_ID)
-  console.log('Path:', path)
-  
-  // Always try direct API call first if we have credentials
-  if (PRINTIFY_API_TOKEN && SHOP_ID) {
-    console.log('✅ Using direct Printify API call')
-    
-    // Build the Printify API URL
-    const baseUrl = 'https://api.printify.com/v1'
-    const fullPath = path.startsWith('/') ? path : `/${path}`
-    const url = `${baseUrl}${fullPath}`
-    
-    console.log('Full URL:', url)
-    
-    // Prepare headers with Bearer token
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent': 'TheAnimeVault-API/1.0'
-    }
-
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        mode: 'cors',
-        ...options
-      })
-
-      console.log('Response status:', response.status, response.statusText)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ Printify API error response:', errorText)
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
+  // Serialize query params if provided
+  if (options?.params && Object.keys(options.params).length > 0) {
+    const u = new URL(url, window.location.origin)
+    for (const [k, v] of Object.entries(options.params)) {
+      if (v == null) continue
+      if (Array.isArray(v)) {
+        v.forEach((vv) => u.searchParams.append(k, String(vv)))
+      } else {
+        u.searchParams.set(k, String(v))
       }
-
-      const data = await response.json()
-      console.log('✅ Printify API success:', data)
-      
-      // Mimic axios response structure for compatibility
-      return {
-        data,
-        headers: Object.fromEntries(response.headers.entries()),
-        status: response.status,
-        statusText: response.statusText
-      }
-    } catch (err: any) {
-      console.error('❌ Direct Printify API call failed:', err)
-      // Don't fall back to proxy for production, just throw the error
-      throw err
     }
+    url = u.pathname + u.search
   }
 
-  // No credentials available
-  console.error('❌ No Printify credentials available')
-  throw new Error('Printify API credentials not configured')
+  const response = await fetch(url, { method: 'GET' })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(`Proxy HTTP ${response.status} ${response.statusText} - ${text}`)
+  }
+  const data = await response.json().catch(() => null)
+  return {
+    data,
+    headers: Object.fromEntries(response.headers.entries()),
+    status: response.status,
+    statusText: response.statusText
+  }
 }
 
 export interface PrintifyProduct {
@@ -167,7 +125,8 @@ export const printifyService = {
     order?: 'asc' | 'desc'
   } = {}) {
     try {
-      const response = await getWithFallback(`/shops/${SHOP_ID}/products.json`, { params })
+      // Route through proxy: it maps /products -> /shops/{SHOP_ID}/products.json
+      const response = await getViaProxy(`/products`, { params })
       // Printify returns { data: ProductArray }, extract the data array
       const products = Array.isArray(response.data?.data) ? response.data.data : 
                       Array.isArray(response.data) ? response.data : []
@@ -187,7 +146,7 @@ export const printifyService = {
   // Get single product
   async getProduct(id: number) {
     try {
-      const response = await getWithFallback(`/shops/${SHOP_ID}/products/${id}.json`)
+      const response = await getViaProxy(`/products/${id}`)
       return response.data as PrintifyProduct
     } catch (error) {
       console.error('Error fetching product:', error)
@@ -292,7 +251,7 @@ export const printifyService = {
   // Test API connection
   async testConnection() {
     try {
-      const response = await getWithFallback(`/shops/${SHOP_ID}/products.json`)
+      const response = await getViaProxy(`/products`)
       return {
         success: true,
         message: 'API connection successful',
