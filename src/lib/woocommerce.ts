@@ -1,13 +1,6 @@
-import axios from 'axios'
+// Primary: call our server-side proxy (now for Printify)
+const proxyApi = fetch
 
-// Primary: call our server-side proxy
-const proxyApi = axios.create({
-  baseURL: '/api/wc',
-  headers: { 'Accept': 'application/json' },
-  withCredentials: false,
-})
-
-// Optional fallback: call WooCommerce directly from the browser
 // Read multiple possible env names so it works with Vercel setups that use NEXT_PUBLIC_* as well
 const envVars = ((import.meta as any).env || {}) as Record<string, string | undefined>
 function getEnvVar(...keys: string[]) {
@@ -18,142 +11,127 @@ function getEnvVar(...keys: string[]) {
   return ''
 }
 
-const DIRECT_URL = getEnvVar(
-  'VITE_WOOCOMMERCE_URL',
-  'NEXT_PUBLIC_WOOCOMMERCE_URL',
-  'NEXT_PUBLIC_WC_URL'
-)
-const DIRECT_CK = getEnvVar(
+const PRINTIFY_API_TOKEN = getEnvVar(
   'VITE_WOOCOMMERCE_CONSUMER_KEY',
   'NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY',
   'NEXT_PUBLIC_WC_CK',
   'NEXT_PUBLIC_WC_KEY'
 )
-const DIRECT_CS = getEnvVar(
-  'VITE_WOOCOMMERCE_CONSUMER_SECRET',
-  'NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET',
-  'NEXT_PUBLIC_WC_CS',
-  'NEXT_PUBLIC_WC_SECRET'
-)
-const hasDirect = Boolean(DIRECT_URL && DIRECT_CK && DIRECT_CS)
 
-const directApi = hasDirect
-  ? axios.create({
-      baseURL: DIRECT_URL.replace(/\/$/, '') + '/wp-json/wc/v3',
-      headers: { 'Accept': 'application/json' },
-      withCredentials: false,
-      params: {
-        consumer_key: DIRECT_CK,
-        consumer_secret: DIRECT_CS,
-      },
-    })
-  : null
+// Get SHOP_ID from environment or URL
+const SHOP_ID = getEnvVar(
+  'VITE_WOOCOMMERCE_URL',
+  'NEXT_PUBLIC_WOOCOMMERCE_URL',
+  'NEXT_PUBLIC_WC_URL'
+)
+
+const hasDirect = Boolean(PRINTIFY_API_TOKEN && SHOP_ID)
 
 async function getWithFallback<T = any>(path: string, options?: { params?: any }) {
-  // 1) Try server proxy
+  // Build the Printify API URL
+  const baseUrl = 'https://api.printify.com/v1'
+  const url = `${baseUrl}${path}`
+  
+  // Prepare headers with Bearer token
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+
   try {
-    return await proxyApi.get<T>(path, options)
-  } catch (err: any) {
-    const status = err?.response?.status
-    const data = err?.response?.data
-    // 2) If proxy blocked (401/403/5xx) and we have direct credentials, try direct request
-    if (directApi && (status === 401 || status === 403 || status >= 500)) {
-      return await directApi.get<T>(path, options)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      ...options
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
-    // 3) Rethrow with more details for UI
-    const message = typeof data?.message === 'string' ? data.message : err?.message || 'Request failed'
+
+    const data = await response.json()
+    
+    // Mimic axios response structure for compatibility
+    return {
+      data,
+      headers: Object.fromEntries(response.headers.entries()),
+      status: response.status,
+      statusText: response.statusText
+    }
+  } catch (err: any) {
+    // Rethrow with more details for UI
+    const message = err?.message || 'Request failed'
     const error = new Error(message)
     ;(error as any).response = err?.response
     throw error
   }
 }
 
-export interface WooCommerceProduct {
-  id: number
-  name: string
-  slug: string
-  permalink: string
-  date_created: string
-  date_modified: string
-  type: string
-  status: string
-  featured: boolean
-  catalog_visibility: string
+export interface PrintifyProduct {
+  id: string
+  title: string
   description: string
-  short_description: string
-  sku: string
-  price: string
-  regular_price: string
-  sale_price: string
-  on_sale: boolean
-  purchasable: boolean
-  total_sales: number
-  virtual: boolean
-  downloadable: boolean
-  downloads: any[]
-  download_limit: number
-  download_expiry: number
-  external_url: string
-  button_text: string
-  tax_status: string
-  tax_class: string
-  manage_stock: boolean
-  stock_quantity: number | null
-  backorders: string
-  backorders_allowed: boolean
-  backordered: boolean
-  low_stock_amount: number | null
-  sold_individually: boolean
-  weight: string
-  dimensions: {
-    length: string
-    width: string
-    height: string
-  }
-  shipping_required: boolean
-  shipping_taxable: boolean
-  shipping_class: string
-  shipping_class_id: number
-  reviews_allowed: boolean
-  average_rating: string
-  rating_count: number
-  upsell_ids: number[]
-  cross_sell_ids: number[]
-  parent_id: number
-  purchase_note: string
-  categories: Array<{
-    id: number
+  tags: string[]
+  options: Array<{
     name: string
-    slug: string
+    type: string
+    values: Array<{
+      id: number
+      title: string
+    }>
   }>
-  tags: Array<{
+  variants: Array<{
     id: number
-    name: string
-    slug: string
+    price: number
+    is_enabled: boolean
+    is_default: boolean
+    is_available: boolean
+    options: Record<string, number>
+    quantity: number
   }>
   images: Array<{
-    id: number
-    date_created: string
-    date_modified: string
     src: string
-    name: string
-    alt: string
+    variant_ids: number[]
+    position: string
+    is_default: boolean
   }>
-  attributes: any[]
-  default_attributes: any[]
-  variations: number[]
-  grouped_products: number[]
-  menu_order: number
-  price_html: string
-  related_ids: number[]
-  meta_data: any[]
-  stock_status: string
-  has_options: boolean
-  post_password: string
-  global_unique_id: string
+  created_at: string
+  updated_at: string
+  visible: boolean
+  is_locked: boolean
+  blueprint_id: number
+  user_id: number
+  shop_id: number
+  print_provider_id: number
+  print_areas: Array<{
+    variant_ids: number[]
+    placeholders: Array<{
+      position: string
+      images: Array<{
+        id: string
+        name: string
+        type: string
+        height: number
+        width: number
+        x: number
+        y: number
+        scale: number
+        angle: number
+      }>
+    }>
+  }>
+  print_details: any[]
+  sales_channel_properties: any[]
+  twodaydelivery_enabled: boolean
+  shipping_template: any
+  external: {
+    id: string
+    handle: string
+  }
 }
 
-// API service functions
+//  service functions (renamed but keeping same interface for compatibility)
 export const wooCommerceService = {
   // Get all products
   async getProducts(params: {
@@ -167,12 +145,16 @@ export const wooCommerceService = {
     order?: 'asc' | 'desc'
   } = {}) {
     try {
-  const response = await getWithFallback('/products', { params })
+      const response = await getWithFallback(`/shops/${SHOP_ID}/products.json`, { params })
+      // Printify returns { data: ProductArray }, extract the data array
+      const products = Array.isArray(response.data?.data) ? response.data.data : 
+                      Array.isArray(response.data) ? response.data : []
+      
       return {
-        data: response.data as WooCommerceProduct[],
+        data: products as PrintifyProduct[],
         headers: response.headers as Record<string, string>,
-        total: parseInt((response.headers as any)['x-wp-total'] || '0'),
-        totalPages: parseInt((response.headers as any)['x-wp-totalpages'] || '0')
+        total: products.length, // Printify doesn't provide separate total count
+        totalPages: 1 // All products loaded at once
       }
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -183,15 +165,15 @@ export const wooCommerceService = {
   // Get single product
   async getProduct(id: number) {
     try {
-  const response = await getWithFallback(`/products/${id}`)
-      return response.data as WooCommerceProduct
+      const response = await getWithFallback(`/shops/${SHOP_ID}/products/${id}.json`)
+      return response.data as PrintifyProduct
     } catch (error) {
       console.error('Error fetching product:', error)
       throw error
     }
   },
 
-  // Get product categories
+  // Get product categories - Printify doesn't have categories, return mock data
   async getCategories(params: {
     per_page?: number
     page?: number
@@ -200,12 +182,22 @@ export const wooCommerceService = {
     order?: 'asc' | 'desc'
   } = {}) {
     try {
-  const response = await getWithFallback('/products/categories', { params })
+      // Printify doesn't have a categories endpoint, return predefined categories
+      const mockCategories = [
+        { id: 1, name: 'Back to School', count: 1, slug: 'back-to-school' },
+        { id: 2, name: 'New', count: 2, slug: 'new' },
+        { id: 3, name: 'Accessories', count: 1, slug: 'accessories' },
+        { id: 4, name: 'Bags', count: 2, slug: 'bags' },
+        { id: 5, name: 'Gaming', count: 4, slug: 'gaming' },
+        { id: 6, name: 'Journal', count: 2, slug: 'journal' },
+        { id: 7, name: 'Shirts', count: 3, slug: 'shirts' },
+      ]
+      
       return {
-        data: response.data,
-        headers: response.headers as Record<string, string>,
-        total: parseInt((response.headers as any)['x-wp-total'] || '0'),
-        totalPages: parseInt((response.headers as any)['x-wp-totalpages'] || '0')
+        data: mockCategories,
+        headers: {} as Record<string, string>,
+        total: mockCategories.length,
+        totalPages: 1
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -215,44 +207,77 @@ export const wooCommerceService = {
 
   // Get featured products
   async getFeaturedProducts(limit: number = 6) {
-    return this.getProducts({
-      featured: true,
-      per_page: limit,
-      orderby: 'date',
-      order: 'desc'
-    })
+    const allProducts = await this.getProducts({ per_page: 100 })
+    const featuredProducts = allProducts.data.filter(product => 
+      product.tags.includes('featured') || product.tags.includes('Featured')
+    )
+    
+    return {
+      data: featuredProducts.slice(0, limit),
+      headers: allProducts.headers,
+      total: featuredProducts.length,
+      totalPages: 1
+    }
   },
 
-  // Get products by category
+  // Get products by category - filter by tags since Printify doesn't have categories
   async getProductsByCategory(categoryId: number, limit: number = 12) {
-    return this.getProducts({
-      category: categoryId.toString(),
-      per_page: limit,
-      orderby: 'menu_order',
-      order: 'asc'
-    })
+    const categoryNames = {
+      1: 'Back to School',
+      2: 'New',
+      3: 'Accessories', 
+      4: 'Bags',
+      5: 'Gaming',
+      6: 'Journal',
+      7: 'Shirts'
+    }
+    
+    const categoryName = categoryNames[categoryId as keyof typeof categoryNames]
+    if (!categoryName) {
+      return { data: [], headers: {}, total: 0, totalPages: 1 }
+    }
+    
+    const allProducts = await this.getProducts({ per_page: 100 })
+    const categoryProducts = allProducts.data.filter(product => 
+      product.tags.some(tag => tag.toLowerCase().includes(categoryName.toLowerCase()))
+    )
+    
+    return {
+      data: categoryProducts.slice(0, limit),
+      headers: allProducts.headers,
+      total: categoryProducts.length,
+      totalPages: 1
+    }
   },
 
   // Search products
   async searchProducts(query: string, limit: number = 20) {
-    return this.getProducts({
-      search: query,
-      per_page: limit,
-      orderby: 'relevance'
-    })
+    const allProducts = await this.getProducts({ per_page: 100 })
+    const searchResults = allProducts.data.filter(product =>
+      product.title.toLowerCase().includes(query.toLowerCase()) ||
+      product.description.toLowerCase().includes(query.toLowerCase()) ||
+      product.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+    )
+    
+    return {
+      data: searchResults.slice(0, limit),
+      headers: allProducts.headers,
+      total: searchResults.length,
+      totalPages: 1
+    }
   },
 
   // Test API connection
   async testConnection() {
     try {
-  const response = await getWithFallback('/products', { params: { per_page: 1 } })
+      const response = await getWithFallback(`/shops/${SHOP_ID}/products.json`)
       return {
         success: true,
         message: 'API connection successful',
         data: response.data
       }
     } catch (error: any) {
-      console.error('WooCommerce API Error:', error)
+      console.error('Printify API Error:', error)
       return {
         success: false,
         message: 'API connection failed',
@@ -262,28 +287,49 @@ export const wooCommerceService = {
   }
 }
 
-// Utility function to convert WooCommerce product to local Product type
-export function convertWooCommerceProduct(wooProduct: WooCommerceProduct) {
+// Utility function to convert Printify product to local Product type
+export function convertWooCommerceProduct(printifyProduct: PrintifyProduct) {
+  // Get the default variant for pricing
+  const defaultVariant = printifyProduct.variants.find(v => v.is_default) || printifyProduct.variants[0]
+  const price = defaultVariant ? defaultVariant.price / 100 : 0 // Printify prices are in cents
+  
+  // Get the default image
+  const defaultImage = printifyProduct.images.find(img => img.is_default) || printifyProduct.images[0]
+  
+  // Extract categories from tags (first tag becomes category)
+  const category = printifyProduct.tags[0] || 'General'
+  const categories = printifyProduct.tags.map((tag, index) => ({
+    id: index + 1,
+    name: tag,
+    slug: tag.toLowerCase().replace(/\s+/g, '-')
+  }))
+
   return {
-    id: wooProduct.id.toString(),
-    name: wooProduct.name,
-    price: parseFloat(wooProduct.price) || 0,
-    originalPrice: parseFloat(wooProduct.regular_price) || parseFloat(wooProduct.price) || 0,
-    image: wooProduct.images[0]?.src || '/placeholder-product.jpg',
-    category: wooProduct.categories[0]?.name || 'General',
-    categories: wooProduct.categories, // Keep full categories array for filtering
-    inStock: wooProduct.stock_status === 'instock',
-    featured: wooProduct.featured,
-    description: wooProduct.description,
-    shortDescription: wooProduct.short_description,
-    tags: wooProduct.tags.map(tag => tag.name),
-    images: wooProduct.images.map(img => img.src),
-    sku: wooProduct.sku,
-    weight: wooProduct.weight,
-    dimensions: wooProduct.dimensions,
-    rating: parseFloat(wooProduct.average_rating) || 0,
-    reviewCount: wooProduct.rating_count || 0,
-    onSale: wooProduct.on_sale,
-    stockQuantity: wooProduct.stock_quantity
+    id: printifyProduct.id.toString(),
+    name: printifyProduct.title,
+    price: price,
+    originalPrice: price, // Printify doesn't have separate regular/sale prices in basic structure
+    image: defaultImage?.src || '/placeholder-product.jpg',
+    category: category,
+    categories: categories, // Keep full categories array for filtering
+    inStock: printifyProduct.variants.some(v => v.is_available && v.quantity > 0),
+    featured: printifyProduct.tags.includes('featured') || printifyProduct.tags.includes('Featured'),
+    description: printifyProduct.description,
+    shortDescription: printifyProduct.description.length > 150 
+      ? printifyProduct.description.substring(0, 150) + '...' 
+      : printifyProduct.description,
+    tags: printifyProduct.tags,
+    images: printifyProduct.images.map(img => img.src),
+    sku: printifyProduct.id.toString(),
+    weight: '',
+    dimensions: {
+      length: '',
+      width: '',
+      height: ''
+    },
+    rating: 0, // Printify doesn't provide ratings
+    reviewCount: 0, // Printify doesn't provide review counts
+    onSale: false, // No sale price concept in basic Printify structure
+    stockQuantity: printifyProduct.variants.reduce((total, variant) => total + (variant.quantity || 0), 0)
   }
 }

@@ -1,13 +1,11 @@
-// Vercel Serverless Proxy for WooCommerce REST API
-// Routes: /api/wc/* -> https://<WC_URL>/wp-json/wc/v3/*
-// Uses Basic Auth with server-side env vars so secrets are NOT exposed to the browser.
+// Vercel Serverless Proxy for Printify REST API  
+// Routes: /api/wc/* -> https://api.printify.com/v1/*
+// Uses Bearer Auth with server-side env vars so secrets are NOT exposed to the browser.
 
 // Local editor hint: we don't include Node types in this project tsconfig; declare minimal globals
 // to avoid red squiggles. Vercel's runtime provides real implementations.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const process: any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const Buffer: any
 
 function getEnv(name: string, fallback?: string) {
   const v = process.env[name]
@@ -15,16 +13,15 @@ function getEnv(name: string, fallback?: string) {
 }
 
 // Support multiple possible variable names so it works with your current Vercel setup
-const WC_URL = getEnv('WOOCOMMERCE_URL', getEnv('VITE_WOOCOMMERCE_URL', getEnv('NEXT_PUBLIC_WC_URL')))
-const WC_CK = getEnv('WOOCOMMERCE_CONSUMER_KEY', getEnv('VITE_WOOCOMMERCE_CONSUMER_KEY'))
-const WC_CS = getEnv('WOOCOMMERCE_CONSUMER_SECRET', getEnv('VITE_WOOCOMMERCE_CONSUMER_SECRET'))
+const PRINTIFY_API_TOKEN = getEnv('WOOCOMMERCE_CONSUMER_KEY', getEnv('VITE_WOOCOMMERCE_CONSUMER_KEY'))
+const SHOP_ID = getEnv('WOOCOMMERCE_URL', getEnv('VITE_WOOCOMMERCE_URL', getEnv('NEXT_PUBLIC_WC_URL')))
 
 // Note: We avoid importing @vercel/node types to keep local editors happy without extra dev deps.
 export default async function handler(req: any, res: any) {
-  if (!WC_URL || !WC_CK || !WC_CS) {
+  if (!PRINTIFY_API_TOKEN || !SHOP_ID) {
     return res.status(500).json({
-      error: 'WooCommerce proxy misconfigured',
-      details: 'Missing WC_URL or consumer key/secret in environment variables.'
+      error: 'Printify proxy misconfigured',
+      details: 'Missing PRINTIFY_API_TOKEN or SHOP_ID in environment variables.'
     })
   }
 
@@ -32,52 +29,69 @@ export default async function handler(req: any, res: any) {
     const pathParts = ([] as string[]).concat((req.query.path as any) || [])
     const subPath = pathParts.join('/')
 
-  const base = WC_URL.replace(/\/$/, '')
-  const target = new URL(`${base}/wp-json/wc/v3/${subPath}`)
+    // Build Printify API URL
+    const base = 'https://api.printify.com/v1'
+    let target: string
+    
+    // Map common WooCommerce paths to Printify equivalents
+    if (subPath.includes('products/categories')) {
+      // Return mock categories since Printify doesn't have categories
+      const mockCategories = [
+        { id: 1, name: 'Back to School', count: 1, slug: 'back-to-school' },
+        { id: 2, name: 'New', count: 2, slug: 'new' },
+        { id: 3, name: 'Accessories', count: 1, slug: 'accessories' },
+        { id: 4, name: 'Bags', count: 2, slug: 'bags' },
+        { id: 5, name: 'Gaming', count: 4, slug: 'gaming' },
+        { id: 6, name: 'Journal', count: 2, slug: 'journal' },
+        { id: 7, name: 'Shirts', count: 3, slug: 'shirts' },
+      ]
+      return res.status(200).json(mockCategories)
+    } else if (subPath === 'products' || subPath.startsWith('products/')) {
+      // Map to Printify products endpoint
+      if (subPath === 'products') {
+        target = `${base}/shops/${SHOP_ID}/products.json`
+      } else {
+        const productId = subPath.replace('products/', '')
+        target = `${base}/shops/${SHOP_ID}/products/${productId}.json`
+      }
+    } else {
+      // Default mapping for other endpoints
+      target = `${base}/${subPath}`
+    }
 
     // Forward query params (except our dynamic catch-all key "path")
     const qp = { ...req.query } as Record<string, any>
     delete qp.path
-    for (const [key, value] of Object.entries(qp)) {
-      if (Array.isArray(value)) {
-        value.forEach((v) => target.searchParams.append(key, String(v)))
-      } else if (value !== undefined) {
-        target.searchParams.set(key, String(value))
+    
+    if (Object.keys(qp).length > 0) {
+      const url = new URL(target)
+      for (const [key, value] of Object.entries(qp)) {
+        if (Array.isArray(value)) {
+          value.forEach((v) => url.searchParams.append(key, String(v)))
+        } else if (value !== undefined) {
+          url.searchParams.set(key, String(value))
+        }
       }
+      target = url.toString()
     }
 
-  const basicAuth = Buffer.from(`${WC_CK}:${WC_CS}`).toString('base64')
-
-    // Prepare request init
+    // Prepare request init with Bearer token
     const init: any = {
       method: req.method,
       headers: {
-        // Prefer query-string auth for maximum WooCommerce compatibility
-        // (some hosts block Basic auth from serverless fetch).
+        'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
+        'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        // Only set content-type if body exists; fetch will add boundary for form-data otherwise
-        ...(req.body ? { 'Content-Type': req.headers['content-type'] || 'application/json' } : {})
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
       // For GET/HEAD no body
-      body: typeof req.body === 'string' || Buffer.isBuffer(req.body)
-        ? (req.method === 'GET' || req.method === 'HEAD' ? undefined : (req.body as any))
+      body: typeof req.body === 'string'
+        ? (req.method === 'GET' || req.method === 'HEAD' ? undefined : req.body)
         : (req.method === 'GET' || req.method === 'HEAD' ? undefined : JSON.stringify(req.body))
     }
 
-  // Add credentials also as query parameters (more compatible with some WooCommerce/host setups)
-  target.searchParams.set('consumer_key', WC_CK)
-  target.searchParams.set('consumer_secret', WC_CS)
-
-  const response = await fetch(target.toString(), init)
+    const response = await fetch(target, init)
     const contentType = response.headers.get('content-type') || 'application/json'
-
-    // Pass through status and key headers useful for pagination
-    const exposeHeaders = ['x-wp-total', 'x-wp-totalpages']
-    exposeHeaders.forEach((h) => {
-      const v = response.headers.get(h)
-      if (v) res.setHeader(h, v)
-    })
 
     res.setHeader('Content-Type', contentType)
 
@@ -85,13 +99,13 @@ export default async function handler(req: any, res: any) {
       const data = await response.json()
       return res.status(response.status).json(data)
     } else {
-      const buf = Buffer.from(await response.arrayBuffer())
-      return res.status(response.status).send(buf)
+      const text = await response.text()
+      return res.status(response.status).send(text)
     }
   } catch (err: any) {
-    console.error('WooCommerce proxy error:', err)
+    console.error('Printify proxy error:', err)
     return res.status(502).json({
-      error: 'WooCommerce proxy request failed',
+      error: 'Printify proxy request failed',
       details: err?.message || 'Unknown error'
     })
   }
