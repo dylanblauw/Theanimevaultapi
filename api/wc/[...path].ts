@@ -87,9 +87,14 @@ export default async function handler(req: any, res: any) {
       target = `${base}/${subPath}`
     }
 
-    // Forward query params (except our dynamic catch-all key "path")
+    // Forward query params (except our dynamic catch-all key "path").
+    // Also translate per_page -> limit for Printify.
     const qp = { ...req.query } as Record<string, any>
     delete qp.path
+    if (qp.per_page && !qp.limit) {
+      qp.limit = qp.per_page
+      delete qp.per_page
+    }
     
     if (Object.keys(qp).length > 0) {
       const url = new URL(target)
@@ -125,6 +130,11 @@ export default async function handler(req: any, res: any) {
 
     if (contentType.includes('application/json')) {
       const data = await response.json()
+      // Normalize list shape for products endpoint so client always sees { data: [] }
+      if (subPath === 'products') {
+        const normalized = Array.isArray(data) ? { data } : (Array.isArray(data?.data) ? { data: data.data } : data)
+        return res.status(response.status).json(normalized)
+      }
       return res.status(response.status).json(data)
     } else {
       const text = await response.text()
