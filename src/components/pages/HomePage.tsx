@@ -132,6 +132,13 @@ export function HomePage({ featuredProducts, onAddToCart, onViewDetails, onNavig
                 <p className="text-muted-foreground mb-6 leading-relaxed text-sm">
                   Step into a world of magic, machines, and monsters. Built around the Tensura Reincarnated mod and inspired by <em>That Time I Got Reincarnated as a Slime</em>, harness powerful abilities, build thriving colonies with MineColonies, and automate with Create.
                 </p>
+                <div className="mb-6 rounded-lg overflow-hidden">
+                  <img 
+                    src="/homepage/modpack.png" 
+                    alt="OtherWorlds Awakening Modpack"
+                    className="w-full h-32 object-cover"
+                  />
+                </div>
               </div>
               <div className="flex gap-2">
                 <a 
