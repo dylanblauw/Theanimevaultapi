@@ -158,6 +158,30 @@ export function HomePage({ featuredProducts, onAddToCart, onViewDetails, onNavig
             </motion.div>
           </div>
 
+          {/* Minecraft Shop Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="text-center mt-16 mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 gradient-text-animated">
+              Minecraft Shop
+            </h2>
+            <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
+              Enhance your Minecraft experience with exclusive items and collectibles designed for OtherWorlds Awakening.
+            </p>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => onNavigate('shop')}
+              className="border-gold/30 hover:border-gold hover:bg-gold/10 mr-4"
+            >
+              Visit Minecraft Shop
+              <ArrowRight weight="bold" className="ml-2" />
+            </Button>
+          </motion.div>
+
           <div className="text-center mt-12">
             <Button
               size="lg"
