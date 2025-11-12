@@ -4,8 +4,6 @@ import "@github/spark/spark"
 
 import App from './App.tsx'
 import { ErrorFallback } from './ErrorFallback.tsx'
-import './lib/debug-env' // Debug environment variables
-import './lib/test-printify' // Auto-test Printify API in development
 
 import "./main.css"
 import "./styles/theme.css"

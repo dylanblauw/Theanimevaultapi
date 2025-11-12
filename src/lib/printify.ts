@@ -28,39 +28,48 @@ const SHOP_ID = getEnvVar(
 const hasDirect = Boolean(PRINTIFY_API_TOKEN && SHOP_ID)
 
 async function getWithFallback<T = any>(path: string, options?: { params?: any }) {
-  // If we have direct credentials, use them to call Printify API directly
+  console.log('=== PRINTIFY API CALL ===')
+  console.log('API Token:', PRINTIFY_API_TOKEN ? PRINTIFY_API_TOKEN.substring(0, 10) + '...' : 'NOT SET')
+  console.log('Shop ID:', SHOP_ID)
+  console.log('Path:', path)
+  
+  // Always try direct API call first if we have credentials
   if (PRINTIFY_API_TOKEN && SHOP_ID) {
-    console.log('Making direct Printify API call with token:', PRINTIFY_API_TOKEN.substring(0, 10) + '...')
-    console.log('Shop ID:', SHOP_ID)
-    console.log('Path:', path)
+    console.log('✅ Using direct Printify API call')
     
     // Build the Printify API URL
     const baseUrl = 'https://api.printify.com/v1'
-    const url = `${baseUrl}${path}`
+    const fullPath = path.startsWith('/') ? path : `/${path}`
+    const url = `${baseUrl}${fullPath}`
+    
+    console.log('Full URL:', url)
     
     // Prepare headers with Bearer token
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'User-Agent': 'TheAnimeVault-API/1.0'
     }
 
     try {
       const response = await fetch(url, {
         method: 'GET',
         headers,
+        mode: 'cors',
         ...options
       })
 
+      console.log('Response status:', response.status, response.statusText)
+
       if (!response.ok) {
-        console.error('Printify API error:', response.status, response.statusText)
         const errorText = await response.text()
-        console.error('Error response:', errorText)
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        console.error('❌ Printify API error response:', errorText)
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
       }
 
       const data = await response.json()
-      console.log('Printify API response success:', data)
+      console.log('✅ Printify API success:', data)
       
       // Mimic axios response structure for compatibility
       return {
@@ -70,45 +79,15 @@ async function getWithFallback<T = any>(path: string, options?: { params?: any }
         statusText: response.statusText
       }
     } catch (err: any) {
-      console.error('Direct Printify API call failed:', err)
-      // Don't fall back to proxy, throw the error
+      console.error('❌ Direct Printify API call failed:', err)
+      // Don't fall back to proxy for production, just throw the error
       throw err
     }
   }
 
-  // Fallback to proxy if no direct credentials
-  console.log('No direct Printify credentials, using proxy...')
-  try {
-    const proxyUrl = `/api/wc${path}`
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      ...options
-    })
-
-    if (!response.ok) {
-      throw new Error(`Proxy error: HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    
-    return {
-      data,
-      headers: Object.fromEntries(response.headers.entries()),
-      status: response.status,
-      statusText: response.statusText
-    }
-  } catch (err: any) {
-    console.error('Proxy call failed:', err)
-    // Rethrow with more details for UI
-    const message = err?.message || 'Request failed'
-    const error = new Error(message)
-    ;(error as any).response = err?.response
-    throw error
-  }
+  // No credentials available
+  console.error('❌ No Printify credentials available')
+  throw new Error('Printify API credentials not configured')
 }
 
 export interface PrintifyProduct {
