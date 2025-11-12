@@ -271,11 +271,13 @@ export const printifyService = {
 // Utility function to convert Printify product to local Product type
 export function convertPrintifyProduct(printifyProduct: PrintifyProduct) {
   // Get the default variant for pricing
-  const defaultVariant = printifyProduct.variants.find(v => v.is_default) || printifyProduct.variants[0]
-  const price = defaultVariant ? defaultVariant.price / 100 : 0 // Printify prices are in cents
+  const variants = Array.isArray((printifyProduct as any).variants) ? (printifyProduct as any).variants : []
+  const defaultVariant = variants.find((v: any) => v && v.is_default) || variants[0]
+  const price = defaultVariant && typeof defaultVariant.price === 'number' ? defaultVariant.price / 100 : 0 // Printify prices are in cents
   
   // Get the default image
-  const defaultImage = printifyProduct.images.find(img => img.is_default) || printifyProduct.images[0]
+  const images = Array.isArray((printifyProduct as any).images) ? (printifyProduct as any).images : []
+  const defaultImage = images.find((img: any) => img && img.is_default) || images[0]
   
   // Extract categories from tags (first tag becomes category)
   const category = printifyProduct.tags[0] || 'General'
@@ -293,14 +295,14 @@ export function convertPrintifyProduct(printifyProduct: PrintifyProduct) {
     image: defaultImage?.src || '/placeholder-product.jpg',
     category: category,
     categories: categories, // Keep full categories array for filtering
-    inStock: printifyProduct.variants.some(v => v.is_available && v.quantity > 0),
+  inStock: variants.some((v: any) => v && v.is_available && (v.quantity || 0) > 0),
     featured: printifyProduct.tags.includes('featured') || printifyProduct.tags.includes('Featured'),
     description: printifyProduct.description,
     shortDescription: printifyProduct.description.length > 150 
       ? printifyProduct.description.substring(0, 150) + '...' 
       : printifyProduct.description,
     tags: printifyProduct.tags,
-    images: printifyProduct.images.map(img => img.src),
+  images: images.map((img: any) => img?.src).filter(Boolean),
     sku: printifyProduct.id.toString(),
     weight: '',
     dimensions: {
@@ -311,7 +313,7 @@ export function convertPrintifyProduct(printifyProduct: PrintifyProduct) {
     rating: 0, // Printify doesn't provide ratings
     reviewCount: 0, // Printify doesn't provide review counts
     onSale: false, // No sale price concept in basic Printify structure
-    stockQuantity: printifyProduct.variants.reduce((total, variant) => total + (variant.quantity || 0), 0)
+    stockQuantity: variants.reduce((total: number, variant: any) => total + (variant?.quantity || 0), 0)
   }
 }
 
