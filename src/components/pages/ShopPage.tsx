@@ -35,18 +35,13 @@ export function ShopPage({ onAddToCart, onViewDetails }: ShopPageProps) {
       console.log('📦 Products received:', response.data.length)
       
       const convertedProducts = response.data.map(convertSquareProduct)
+      console.log('✨ Setting Square products:', convertedProducts.length)
+      setProducts(convertedProducts)
       
-      if (convertedProducts.length === 0) {
-        console.log('⚠️ No products from Square, using fallback')
-        setProducts(fallbackProducts)
-      } else {
-        console.log('✨ Setting Square products:', convertedProducts.length)
-        setProducts(convertedProducts)
-      }
     } catch (err: any) {
       console.error('❌ Failed to load products from Square:', err)
-      setError('Failed to load products. Showing local products instead.')
-      setProducts(fallbackProducts)
+      setError(`Failed to load products from Square: ${err.message}`)
+      setProducts([])
     } finally {
       setLoading(false)
     }
