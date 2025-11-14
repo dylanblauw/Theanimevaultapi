@@ -24,20 +24,27 @@ export function ShopPage({ onAddToCart, onViewDetails }: ShopPageProps) {
   }, [])
 
   const loadProducts = async () => {
+    console.log('🔄 Loading products from Square...')
     setLoading(true)
     setError(null)
     
     try {
+      console.log('📡 Calling API: /api/products?limit=100')
       const response = await squareService.getProducts({ limit: 100 })
+      console.log('✅ API Response:', response)
+      console.log('📦 Products received:', response.data.length)
+      
       const convertedProducts = response.data.map(convertSquareProduct)
       
       if (convertedProducts.length === 0) {
+        console.log('⚠️ No products from Square, using fallback')
         setProducts(fallbackProducts)
       } else {
+        console.log('✨ Setting Square products:', convertedProducts.length)
         setProducts(convertedProducts)
       }
     } catch (err: any) {
-      console.error('Failed to load products from Square:', err)
+      console.error('❌ Failed to load products from Square:', err)
       setError('Failed to load products. Showing local products instead.')
       setProducts(fallbackProducts)
     } finally {

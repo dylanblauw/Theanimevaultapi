@@ -17,7 +17,11 @@ const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID
 
 // Products endpoint
 app.get('/api/products', async (req, res) => {
+  console.log('📨 Incoming request to /api/products')
+  console.log('   Query params:', req.query)
+  
   if (!SQUARE_ACCESS_TOKEN) {
+    console.error('❌ Missing SQUARE_ACCESS_TOKEN')
     return res.status(500).json({
       error: 'Square API misconfigured',
       details: 'Missing SQUARE_ACCESS_TOKEN in environment variables'
@@ -25,6 +29,7 @@ app.get('/api/products', async (req, res) => {
   }
 
   try {
+    console.log('🔄 Fetching from Square Catalog API...')
     const response = await fetch('https://connect.squareup.com/v2/catalog/list', {
       method: 'GET',
       headers: {
@@ -35,9 +40,11 @@ app.get('/api/products', async (req, res) => {
       }
     })
 
+    console.log(`✅ Square API responded with status: ${response.status}`)
+    
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Square API Error:', response.status, errorText)
+      console.error('❌ Square API Error:', response.status, errorText)
       return res.status(response.status).json({
         error: 'Square API request failed',
         details: `HTTP ${response.status}: ${errorText}`
@@ -45,10 +52,13 @@ app.get('/api/products', async (req, res) => {
     }
 
     const data = await response.json()
+    console.log(`📦 Received ${data.objects?.length || 0} objects from Square`)
     
     // Build image map
     const imageMap = new Map()
     const allObjects = Array.isArray(data.objects) ? data.objects : []
+    
+    console.log(`🔍 Object types: ${allObjects.map(o => o.type).join(', ')}`)
     
     for (const obj of allObjects) {
       if (obj?.type === 'IMAGE' && obj?.image_data?.url && obj?.id) {
@@ -58,6 +68,7 @@ app.get('/api/products', async (req, res) => {
 
     // Filter and transform items
     const items = allObjects.filter(obj => obj.type === 'ITEM') || []
+    console.log(`📦 Found ${items.length} ITEM objects out of ${allObjects.length} total objects`)
     
     const products = items.map(item => {
       const itemData = item.item_data
@@ -101,7 +112,7 @@ app.get('/api/products', async (req, res) => {
         category: category,
         categories: [{ id: categoryId || 'general', name: category, slug: category.toLowerCase().replace(/\s+/g, '-') }],
         inStock: productVariations.some(v => v.inStock),
-        featured: itemData?.label_color === 'FF0000',
+        featured: true, // Mark all products as featured by default, or use: itemData?.label_color === 'FF0000'
         tags: itemData?.categories || [],
         sku: baseVariation?.item_variation_data?.sku || item.id,
         variations: productVariations
@@ -134,6 +145,11 @@ app.get('/api/products', async (req, res) => {
     const limitNum = parseInt(limit) || 20
     const offsetNum = parseInt(offset) || 0
     const paginatedProducts = filteredProducts.slice(offsetNum, offsetNum + limitNum)
+
+    console.log(`✨ Returning ${paginatedProducts.length} products`)
+    if (paginatedProducts.length > 0) {
+      console.log(`   First product: "${paginatedProducts[0].name}" - €${paginatedProducts[0].price}`)
+    }
 
     res.json({
       data: paginatedProducts,

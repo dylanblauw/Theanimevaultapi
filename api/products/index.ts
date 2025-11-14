@@ -128,7 +128,7 @@ export default async function handler(req: any, res: any) {
         category: category,
         categories: [{ id: categoryId || 'general', name: category, slug: category.toLowerCase().replace(/\s+/g, '-') }],
   inStock: productVariations.some((v: any) => v.inStock),
-        featured: itemData?.label_color === 'FF0000', // Use red label as featured indicator
+        featured: true, // Mark all products as featured by default, or use: itemData?.label_color === 'FF0000'
         tags: itemData?.categories || [],
         sku: baseVariation?.item_variation_data?.sku || item.id,
         variations: productVariations
