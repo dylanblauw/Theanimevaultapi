@@ -1,0 +1,22 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/products",
+      "destination": "/api/products/index"
+    },
+    {
+      "source": "/api/products/:id",
+      "destination": "/api/products/[id]"
+    },
+    {
+      "source": "/api/product/:id",
+      "destination": "/api/product/[id]"
+    }
+  ],
+  "env": {
+    "SQUARE_ACCESS_TOKEN": "@square_access_token",
+    "SQUARE_APPLICATION_ID": "@square_application_id",
+    "SQUARE_LOCATION_ID": "@square_location_id",
+    "SQUARE_ENV": "production"
+  }
+}

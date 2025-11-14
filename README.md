@@ -1,7 +1,7 @@
 The Anime Vault – Website
 
 Welcome to The Anime Vault, an anime-themed eCommerce platform where users can explore, browse, and purchase anime-related products.
-This repository contains the full frontend source code, including integrations with WooCommerce, Vercel, and TailwindCSS.
+This repository contains the full frontend source code, now fully powered by Square Catalog API with Vercel serverless API routes and TailwindCSS.
 
 Project Overview
 
@@ -11,20 +11,19 @@ Vite + React (TypeScript) – for fast development and rendering
 
 TailwindCSS – for styling and component consistency
 
-WooCommerce REST API – for product management and dynamic data
+Square Catalog API – for product catalog and pricing (via serverless routes)
 
 Vercel – for production hosting and deployment
 
 🛠️ Project Structure
-.
-├── api/wc/                   # WooCommerce API integration
+. 
+├── api/products/            # Square Catalog API endpoints (/api/products, /api/products/[id])
 ├── public/                   # Static assets (images, icons, etc.)
-├── scripts/woo/              # Custom scripts for WooCommerce synchronization
+├── src/lib/square.ts        # Client service for Square-backed product fetching
 ├── src/                      # Main application source (React components, pages, etc.)
 ├── .env.example              # Example environment variables
 ├── LOCAL_SETUP.md            # Local development setup guide
-├── WOOCOMMERCE_GUIDE.md      # How to connect and manage WooCommerce
-├── WOOCOMMERCE_SETUP.md      # WooCommerce environment configuration
+├── .env.example              # Square environment variables template
 ├── vite.config.ts            # Vite build configuration
 ├── tailwind.config.js        # TailwindCSS configuration
 └── package.json              # Dependencies and project scripts
@@ -44,7 +43,7 @@ npm install
 
 Create your .env file
 Copy .env.example and rename it to .env.
-Fill in your API keys and WooCommerce credentials.
+Fill in your Square API credentials.
 
 Run the development server
 
@@ -59,16 +58,15 @@ Styling:
 Modify src components and update styles using TailwindCSS classes in each .tsx file.
 For global design rules, edit tailwind.config.js.
 
-WooCommerce Integration:
-Configuration and sync scripts are under /api/wc and /scripts/woo.
-See WOOCOMMERCE_GUIDE.md for detailed connection instructions.
+Square Integration:
+Serverless API routes live in /api/products.
+Client uses src/lib/square.ts to fetch products.
 
 Products & Categories:
-Categories and product data are dynamically fetched from WooCommerce.
-You can modify label formats or visibility in src/components/shop/.
+Categories and product data are fetched from Square Catalog API. The client applies local filters and sorting.
 
 Environment Variables:
-Adjust API URLs or tokens in .env.
+Add your Square credentials in .env (see .env.example). Never expose tokens in the browser.
 
 Deployment:
 The project is optimized for Vercel.
@@ -83,7 +81,7 @@ Security
 
 For security details, please read SECURITY.md
 .
-Make sure API keys and WooCommerce credentials are never committed to the repository.
+Make sure API keys and Square credentials are never committed to the repository.
 
 License
 

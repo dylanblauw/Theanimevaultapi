@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Product } from '@/lib/types'
+import { useState, useMemo } from 'react'
 import { ShoppingCart, Star, Package, ShieldCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +14,12 @@ interface ProductDetailModalProps {
 }
 
 export function ProductDetailModal({ product, open, onOpenChange, onAddToCart }: ProductDetailModalProps) {
+  const [selectedVariationId, setSelectedVariationId] = useState<string | undefined>(undefined)
+  const selectedVariation = useMemo(() => {
+    if (!product?.variations || !selectedVariationId) return undefined
+    return product.variations.find(v => v.id === selectedVariationId)
+  }, [product, selectedVariationId])
+
   if (!product) return null
 
   return (
@@ -67,8 +74,27 @@ export function ProductDetailModal({ product, open, onOpenChange, onAddToCart }:
               </div>
 
               <div className="text-4xl font-bold text-gold mb-6">
-                ${product.price}
+                ${selectedVariation ? selectedVariation.price : product.price}
               </div>
+
+              {/* Variations */}
+              {Array.isArray(product.variations) && product.variations.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">Select an option</label>
+                  <select
+                    className="w-full border border-border bg-background rounded-md p-2"
+                    value={selectedVariationId || ''}
+                    onChange={(e) => setSelectedVariationId(e.target.value || undefined)}
+                  >
+                    <option value="">Default</option>
+                    {product.variations.map(v => (
+                      <option key={v.id} value={v.id} disabled={!v.inStock}>
+                        {v.name} {v.inStock ? '' : '(Out of stock)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <p className="text-muted-foreground leading-relaxed mb-6">
                 {product.description}
@@ -77,7 +103,11 @@ export function ProductDetailModal({ product, open, onOpenChange, onAddToCart }:
               <Button
                 size="lg"
                 onClick={() => {
-                  onAddToCart(product)
+                  // Optionally, attach variation info to product name for cart context
+                  const p = selectedVariation
+                    ? { ...product, name: `${product.name} - ${selectedVariation.name}`, price: selectedVariation.price }
+                    : product
+                  onAddToCart(p)
                   onOpenChange(false)
                 }}
                 disabled={!product.inStock}

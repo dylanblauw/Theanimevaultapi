@@ -6,15 +6,14 @@ import { Footer } from '@/components/Footer'
 import { CartDrawer } from '@/components/CartDrawer'
 import { ProductDetailModal } from '@/components/ProductDetailModal'
 import { HomePage } from '@/components/pages/HomePage'
-import { WooCommerceShopPage } from '@/components/pages/WooCommerceShopPage'
+import { ShopPage } from '@/components/pages/ShopPage'
 import { GamePage } from '@/components/pages/GamePage'
 import { CheckoutPage } from '@/components/pages/CheckoutPage'
 import { AccountPage } from '@/components/pages/AccountPage'
-// import { WooCommerceTestPage } from '@/components/pages/WooCommerceTestPage'
 import { products as localProducts } from '@/lib/products'
 import { Product, CartItem } from '@/lib/types'
 import { backgrounds, PageType } from '@/lib/backgrounds'
-import { wooCommerceService, convertWooCommerceProduct } from '@/lib/printify'
+import { squareService, convertSquareProduct } from '@/lib/square'
 import { CurrencyProvider } from '@/lib/currency'
 
 function App() {
@@ -70,25 +69,17 @@ function App() {
 
   const cartCount = (cartItems || []).reduce((sum, item) => sum + item.quantity, 0)
 
-  // Load random products from WooCommerce for the Home Featured Collection
-  const loadFeaturedFromWoo = async () => {
+  // Load featured products from Square for the Home Featured Collection
+  const loadFeaturedFromSquare = async () => {
     try {
-      // Fetch a reasonable pool, then sample client-side for randomness
-      const { data } = await wooCommerceService.getProducts({ per_page: 24, orderby: 'date', order: 'desc' })
-      const converted = data.map(convertWooCommerceProduct)
-      const pickRandom = <T,>(arr: T[], n: number) => {
-        // Fisher–Yates shuffle (partial)
-        const a = arr.slice()
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-          ;[a[i], a[j]] = [a[j], a[i]]
-        }
-        return a.slice(0, n)
+      // Fetch featured products from Square
+      const { data } = await squareService.getFeaturedProducts(6)
+      const converted = data.map(convertSquareProduct)
+      if (converted.length > 0) {
+        setFeaturedProducts(converted)
       }
-      const selection = pickRandom(converted, 6)
-      if (selection.length > 0) setFeaturedProducts(selection)
     } catch (err) {
-      console.error('Failed to load WooCommerce featured products:', err)
+      console.error('Failed to load Square featured products:', err)
       // Graceful fallback: keep existing local featuredProducts
     }
   }
@@ -97,7 +88,7 @@ function App() {
   useState(() => {
     // Slight delay to allow initial render, avoid blocking
     setTimeout(() => {
-      loadFeaturedFromWoo()
+      loadFeaturedFromSquare()
     }, 0)
     return undefined
   })
@@ -138,7 +129,7 @@ function App() {
         )}
         
         {currentPage === 'shop' && (
-          <WooCommerceShopPage
+          <ShopPage
             onAddToCart={handleAddToCart}
             onViewDetails={handleViewDetails}
           />
@@ -149,8 +140,6 @@ function App() {
         {currentPage === 'checkout' && <CheckoutPage />}
         
         {currentPage === 'account' && <AccountPage />}
-        
-        {/* {currentPage === 'woocommerce-test' && <WooCommerceTestPage />} */}
       </main>
 
       <Footer />

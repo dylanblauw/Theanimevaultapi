@@ -1,26 +1,27 @@
 # Local Development Setup
 
-## WooCommerce API Configuration
+## Square API Configuratie
 
-Voor lokale development heb je WooCommerce API credentials nodig. Volg deze stappen:
+Voor lokale development heb je Square API credentials nodig. Volg deze stappen:
 
 ### 1. Kopieer het example bestand:
 ```bash
 cp .env.example .env.local
 ```
 
-### 2. Vul je WooCommerce credentials in:
+### 2. Vul je Square credentials in:
 ```bash
 # In .env.local
-WOOCOMMERCE_URL=https://jouw-woocommerce-site.com
-WOOCOMMERCE_CONSUMER_KEY=jouw_consumer_key
-WOOCOMMERCE_CONSUMER_SECRET=jouw_consumer_secret
+SQUARE_ACCESS_TOKEN=...
+SQUARE_APPLICATION_ID=...
+SQUARE_LOCATION_ID=...
+SQUARE_ENV=sandbox
 ```
 
-### 3. WooCommerce API Key aanmaken:
-1. Ga naar WordPress Admin → WooCommerce → Settings → Advanced → REST API
-2. Maak een nieuwe API key aan (Read-only is voldoende voor de shop)
-3. Kopieer de Consumer Key en Consumer Secret naar je .env.local
+### 3. Square credentials vinden:
+1. Ga naar Square Developer Dashboard → Apps → Kies je app
+2. Ga naar Credentials en kopieer je Access Token en Application ID
+3. Haal je Location ID op via het Square dashboard (Locations)
 
 ### 4. Restart de dev server:
 ```bash
@@ -29,8 +30,4 @@ npm run dev
 
 ## Fallback Mode
 
-Zonder API credentials werkt de app in fallback mode met:
-- Demo categorieën (Gaming, Apparel, etc.)
-- Beperkte functionaliteit voor product filtering
-
-Voor volledige functionaliteit zijn echte WooCommerce credentials vereist.
+Zonder API credentials werkt de app in fallback mode met demo-producten uit `src/lib/products.ts`.
